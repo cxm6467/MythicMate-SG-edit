@@ -12,6 +12,19 @@ dungeon_aliases = {
     "Grim Batol": ["grim", "batol", "gb"]
 }
 
+# Define the available dungeons and their abbreviations
+# Define the available dungeons and their abbreviations as a single string
+dungeon_urls = {
+    "Ara-Kara, City of Echoes": "https://wow.zamimg.com/images/wow/journal/ui-ej-boss-kikatal.png",
+    "City of Threads": "https://wow.zamimg.com/images/wow/journal/ui-ej-boss-izo.png",
+    "The Stonevault": "https://wow.zamimg.com/images/wow/journal/ui-ej-boss-eirich.png",
+    "The Dawnbreaker": "https://wow.zamimg.com/images/wow/journal/ui-ej-boss-rashanan.png",
+    "Mists of Tirna Scithe": "https://wow.zamimg.com/images/wow/journal/ui-ej-boss-mistcaller.png",
+    "The Necrotic Wake": "https://wow.zamimg.com/images/wow/journal/ui-ej-boss-nalthortherimebinder.png",
+    "Siege of Boralus": "https://wow.zamimg.com/images/wow/journal/ui-ej-boss-viqgoth.png",
+    "Grim Batol": "https://wow.zamimg.com/images/wow/journal/ui-ej-boss-erudax-updated.png"
+}
+
 # Function to translate user input to the full dungeon name
 def translate_dungeon_name(user_input):
     user_input = user_input.lower()

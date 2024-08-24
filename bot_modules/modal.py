@@ -2,6 +2,7 @@
 from discord import ui
 import discord
 from datetime import datetime
+from bot_modules import dungeons
 import bot_modules.choices as choices    # Import predefined choices
 from datetime import datetime
 from datetime import datetime, timedelta, timezone
@@ -95,6 +96,9 @@ class LFMModal(ui.Modal):
         )
 
         embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.avatar.url)
+
+        # Set a thumbnail or image URL for the embed (use your own URL here)
+        embed.set_thumbnail(url=dungeons.dungeon_urls[self.dungeon])
 
         # Initialize members based on the role the user selected
         if self.role.lower() == "tank":
