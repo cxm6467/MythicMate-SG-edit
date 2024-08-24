@@ -3,6 +3,9 @@ from discord import ui
 import discord
 from datetime import datetime
 import bot_modules.choices as choices    # Import predefined choices
+from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 # Define the modal for the slash command
 class LFMModal(ui.Modal):
@@ -54,9 +57,24 @@ class LFMModal(ui.Modal):
             formatted_date = datetime.strptime(self.dungeon_date.value, "%d.%m.%y").strftime("%d.%m.%y")
         except (ValueError, AttributeError):
             formatted_date = "today"  # Assign default value if exception is thrown
-
+        
+        # Handle dungeon_time formatting and conversion to EST
         try:
-            formatted_time = datetime.strptime(self.dungeon_time.value, "%H:%M").strftime("%H:%M")
+            input_time = self.dungeon_time.value
+            current_date = datetime.now().date()
+
+            # Parse the input time in 24-hour format
+            time_object = datetime.strptime(input_time, "%H:%M")
+            datetime_combined = datetime.combine(current_date, time_object.time())
+
+            # Assume input time is in UTC
+            utc_time = datetime_combined.replace(tzinfo=timezone.utc)
+
+            # Convert to Eastern Time (US/Eastern) without using pytz
+            est_time = utc_time.astimezone(ZoneInfo("America/New_York"))
+
+            # Format the time in 12-hour AM/PM format in EST
+            formatted_time = est_time.strftime("%I:%M %p %Z")
         except (ValueError, AttributeError):
             formatted_time = "soon"  # Assign default value if exception is thrown
 
@@ -65,7 +83,7 @@ class LFMModal(ui.Modal):
             title=group_title,
             description=(
                 f"**Difficulty** {self.difficulty}"
-                f"{'  **' + self.key_level + '**' if self.key_level != 'N/A' else ''}\n"
+                f"{self.key_level if self.key_level != 'N/A' else ''}\n"
                 f"**Battle Res?**\t**{'✅' if self.res else '❌'}**\n"
                 f"**Lust?**\t**{'✅' if self.lust else '❌'}**\n"
                 f"**Dungeon Date:** {formatted_date}\n"
