@@ -3,9 +3,9 @@ import discord.app_commands as app_commands
 
 # Define the roles for Tank, Healer, and DPS using emoji symbols
 role_emojis = {
-    "Tank": "🛡️",
-    "Healer": "💚",
-    "DPS": "⚔️",
+    "Tank": "<:wow_tank:868737094242152488>",
+    "Healer": "<:wow_healer:868737094258950144>",
+    "DPS": "<:wow_dps:868737094011486229>",
     "Clear Role": "❌"  # This emoji is used to allow users to clear their selected role
 }
 

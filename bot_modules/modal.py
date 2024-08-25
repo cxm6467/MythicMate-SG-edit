@@ -1,12 +1,10 @@
-# bot_modules/modal.py
 from discord import ui
 import discord
-from datetime import datetime
-from bot_modules import dungeons
-import bot_modules.choices as choices    # Import predefined choices
-from datetime import datetime
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
+import asyncio
+from bot_modules import dungeons
+import bot_modules.choices as choices
 
 # Define the modal for the slash command
 class LFMModal(ui.Modal):
@@ -46,7 +44,6 @@ class LFMModal(ui.Modal):
 
         self.interaction = interaction
 
-
     async def on_submit(self, interaction: discord.Interaction):
         # Defer the interaction to prevent timeout errors
         await interaction.response.defer()
@@ -75,7 +72,7 @@ class LFMModal(ui.Modal):
             est_time = utc_time.astimezone(ZoneInfo("America/New_York"))
 
             # Format the time in 12-hour AM/PM format in EST
-            formatted_time = est_time.strftime("%I:%M %p %Z")
+            formatted_time = est_time.strftime("%I:%M %p")
         except (ValueError, AttributeError):
             formatted_time = "soon"  # Assign default value if exception is thrown
 
@@ -83,16 +80,15 @@ class LFMModal(ui.Modal):
         embed = discord.Embed(
             title=group_title,
             description=(
-                f"**Difficulty** {self.difficulty}"
+                f"**Difficulty** {self.difficulty} "
                 f"{self.key_level if self.key_level != 'N/A' else ''}\n"
                 f"**Battle Res?**\t**{'✅' if self.res else '❌'}**\n"
                 f"**Lust?**\t**{'✅' if self.lust else '❌'}**\n"
-                f"**Dungeon Date:** {formatted_date}\n"
-                f"**Dungeon Time:** {formatted_time}\n"
-                f"{'**Notes:** ' + self.dungeon_note.value if self.dungeon_note.value else ''}\n"
-
+                f"📅   {formatted_date}\n"
+                f"🕒   {formatted_time}\n"
+                f"{'**Notes:** ' + '```' + self.dungeon_note.value +'```' if self.dungeon_note.value else ''}\n"
             ),
-            color=discord.Color.blue()
+            color=discord.Color.og_blurple()
         )
 
         embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.avatar.url)
@@ -111,12 +107,12 @@ class LFMModal(ui.Modal):
             members = {"Tank": None, "Healer": None, "DPS": []}
 
         # Populate the embed with initial values for Tank, Healer, and DPS roles
-        embed.add_field(name="🛡️ Tank", value=members["Tank"].mention if members["Tank"] else "None", inline=False)
-        embed.add_field(name="💚 Healer", value=members["Healer"].mention if members["Healer"] else "None", inline=False)
+        embed.add_field(name="<:wow_tank:868737094242152488> Tank", value=members["Tank"].mention if members["Tank"] else "None", inline=False)
+        embed.add_field(name="<:wow_healer:868737094258950144> Healer", value=members["Healer"].mention if members["Healer"] else "None", inline=False)
 
         # Add one field for DPS with placeholders for up to three DPS members
         dps_value = "\n".join([dps_user.mention for dps_user in members["DPS"]] + ["None"] * (3 - len(members["DPS"])))
-        embed.add_field(name="⚔️ DPS", value=dps_value, inline=False)
+        embed.add_field(name="<:wow_dps:868737094011486229> DPS", value=dps_value, inline=False)
 
         # Send the embed message as a follow-up to the deferred response
         group_message = await interaction.followup.send(embed=embed)
@@ -126,10 +122,35 @@ class LFMModal(ui.Modal):
             await group_message.add_reaction(emoji)
 
         # Create a thread for this group message using the channel
-        await interaction.channel.create_thread(
+        thread = await interaction.channel.create_thread(
             name=group_title,
             message=group_message,  # Attach the thread to the group message
-            auto_archive_duration=1440,  # Auto-archive after 24 hours of inactivity
+            auto_archive_duration=60,  # Auto-archive after 60 minutes of inactivity
             reason="Starting group thread for dungeon run",
             type=discord.ChannelType.private_thread
         )
+
+        # Send a message in the thread indicating when it will be deleted
+        # Calculate deletion time (one hour from now)
+        # Use the current EST time for calculating deletion time (not the dungeon time)
+        # current_time_est = datetime.now().astimezone(ZoneInfo("America/New_York"))
+        deletion_time = (est_time + timedelta(hours=1)).strftime("%I:%M %p")
+        await thread.send(
+            f"{group_title}\n"
+            f"Number of members: {len(members)}\n"
+            f"This thread will be deleted at {deletion_time} (EST), one hour from now."
+        )
+
+        # Wait for one hour (3600 seconds)
+        await asyncio.sleep(3600)
+
+        # Delete the embed message and the thread after 60 seconds
+        try:
+            await group_message.delete()  # Delete the embed message
+            await thread.delete()  # Delete the thread
+        except discord.NotFound:
+            print("Message or thread not found, perhaps it was deleted earlier.")
+        except discord.Forbidden:
+            print("Bot doesn't have permissions to delete message or thread.")
+        except Exception as e:
+            print(f"An error occurred: {e}")
