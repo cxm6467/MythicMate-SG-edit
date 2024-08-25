@@ -138,7 +138,7 @@ class LFMModal(ui.Modal):
         await thread.send(
             f"{group_title}\n"
             f"Number of members: {len(members)}\n"
-            f"This thread will be deleted at {deletion_time} (EST), one hour from now."
+            f"This thread will be deleted at {deletion_time} (EST), one hour after dungeon start."
         )
 
         # Wait for one hour (3600 seconds)
