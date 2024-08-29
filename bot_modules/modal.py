@@ -3,6 +3,7 @@ import discord
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 import asyncio
+from asyncio import Lock
 from bot_modules import dungeons
 import bot_modules.choices as choices
 
@@ -10,7 +11,8 @@ import bot_modules.choices as choices
 class LFMModal(ui.Modal):
     def __init__(self, interaction: discord.Interaction, difficulty: str, dungeon: str = '', key_level: str = '', role: str = '', res: str = '', lust: str = '', title="Looking for Members"):
         super().__init__(title=title)
-        
+        print(f"Initialized LFMModal with interaction user: {interaction.user}")
+        self.user = interaction.user
         self.difficulty = difficulty
         self.dungeon = dungeon
         self.key_level = key_level
@@ -21,13 +23,13 @@ class LFMModal(ui.Modal):
         # Set up text inputs with defaults provided
         self.dungeon_date = ui.TextInput(
             label="Date",
-            placeholder="Enter a Date (DD.MM.YY)",
+            placeholder="Enter a Date (MM/DD/YY)",
             required=True
         )
         
         self.dungeon_time = ui.TextInput(
             label="Time",
-            placeholder="Enter a Time HH:MM EST (EST for now)",
+            placeholder="Enter a Time HH:MM 24hr EST (EST for now)",
             required=True
         )
 
@@ -52,24 +54,22 @@ class LFMModal(ui.Modal):
 
         # Handle dungeon_date and dungeon_time formatting
         try:
-            formatted_date = datetime.strptime(self.dungeon_date.value, "%d.%m.%y").strftime("%d.%m.%y")
+            formatted_date = datetime.strptime(self.dungeon_date.value, "%m/%d/%y").strftime("%m/%d/%y")
         except (ValueError, AttributeError):
             formatted_date = "today"  # Assign default value if exception is thrown
         
         # Handle dungeon_time formatting and conversion to EST
         try:
-            input_time = self.dungeon_time.value
+            input_time = self.dungeon_time.value # Make this EST
             current_date = datetime.now().date()
 
             # Parse the input time in 24-hour format
             time_object = datetime.strptime(input_time, "%H:%M")
-            datetime_combined = datetime.combine(current_date, time_object.time())
+            # datetime_combined = datetime.combine(current_date, time_object.time())
 
-            # Assume input time is in UTC
-            utc_time = datetime_combined.replace(tzinfo=timezone.utc)
 
             # Convert to Eastern Time (US/Eastern) without using pytz
-            est_time = utc_time.astimezone(ZoneInfo("America/New_York"))
+            est_time = time_object.astimezone(ZoneInfo("America/New_York"))
 
             # Format the time in 12-hour AM/PM format in EST
             formatted_time = est_time.strftime("%I:%M %p")
@@ -88,7 +88,7 @@ class LFMModal(ui.Modal):
                 f"🕒   {formatted_time}\n"
                 f"{'**Notes:** ' + '```' + self.dungeon_note.value +'```' if self.dungeon_note.value else ''}\n"
             ),
-            color=discord.Color.og_blurple()
+            color=discord.Color.from_rgb(0, 0, 255)
         )
 
         embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.avatar.url)
@@ -97,14 +97,17 @@ class LFMModal(ui.Modal):
         embed.set_thumbnail(url=dungeons.dungeon_urls[self.dungeon])
 
         # Initialize members based on the role the user selected
-        if self.role.lower() == "tank":
-            members = {"Tank": interaction.user, "Healer": None, "DPS": []}
-        elif self.role.lower() == "healer":
-            members = {"Tank": None, "Healer": interaction.user, "DPS": []}
-        elif self.role.lower() == "dps":
-            members = {"Tank": None, "Healer": None, "DPS": [interaction.user]}
+        if "tank" in self.role.lower():
+            members = {"Tank": self.user, "Healer": None, "DPS": []}
+        elif "healer" in self.role.lower():
+            members = {"Tank": None, "Healer": self.user, "DPS": []}
+        elif "dps" in self.role.lower():
+            members = {"Tank": None, "Healer": None, "DPS": [self.user]}
         else:
             members = {"Tank": None, "Healer": None, "DPS": []}
+
+        print(f"Members: {members} user:{interaction.user.mention}")
+        print(f"Healer in members: {members['Healer']}")
 
         # Populate the embed with initial values for Tank, Healer, and DPS roles
         embed.add_field(name="<:wow_tank:868737094242152488> Tank", value=members["Tank"].mention if members["Tank"] else "None", inline=False)
@@ -134,7 +137,11 @@ class LFMModal(ui.Modal):
         # Calculate deletion time (one hour from now)
         # Use the current EST time for calculating deletion time (not the dungeon time)
         # current_time_est = datetime.now().astimezone(ZoneInfo("America/New_York"))
-        deletion_time = (est_time + timedelta(hours=1)).strftime("%I:%M %p")
+        try:
+            deletion_time = (est_time + timedelta(hours=1)).strftime("%I:%M %p")
+        except Exception as e:
+            deletion_time = 'soon'
+
         await thread.send(
             f"{group_title}\n"
             f"Number of members: {len(members)}\n"

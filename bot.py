@@ -46,8 +46,9 @@ async def lfm(interaction: discord.Interaction, difficulty:str, dungeon: str, ke
     if not full_dungeon_name:
         await interaction.response.send_message(f"Sorry, I couldn't recognize the dungeon name '{dungeon}'. Please try again with a valid name or abbreviation.", ephemeral=True)
         return
-
-    await interaction.response.send_modal(modal.LFMModal(interaction, difficulty, full_dungeon_name, key_level, role, res, lust))
+    
+    lfmModal = modal.LFMModal(interaction, difficulty, full_dungeon_name, key_level, role, res, lust)
+    await interaction.response.send_modal(lfmModal)
 
 # Run the bot with the token loaded from the environment variables
 bot.run(TOKEN)
