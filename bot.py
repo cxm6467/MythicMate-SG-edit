@@ -72,7 +72,7 @@ async def lfm(interaction: discord.Interaction, difficulty:str, dungeon: str, ke
             # Initialize members based on the role the user selected
             
     # Function to check if a reaction is valid and relevant to the current group message
-    def check_reaction(reaction, user, group_message):
+    def check_reaction(reaction, user):
         return user != bot.user and reaction.message.id == group_message.id
 
         # Event handler for when a user adds a reaction to the group message
@@ -126,8 +126,8 @@ async def lfm(interaction: discord.Interaction, difficulty:str, dungeon: str, ke
         # If all roles are filled, add a "✅" reaction to indicate the group is ready
         if members["Tank"] and members["Healer"] and len(members["DPS"]) == 3:
             await group_message.add_reaction("✅")
-            
-    async def update_embed(embed, members, group_message, interaction):
+
+    async def update_embed(embed, members):
         # Update the embed fields with the current members
         embed.set_field_at(0, name="🛡️", value=members["Tank"].mention if members["Tank"] else "None", inline=False)
         embed.set_field_at(1, name="💚", value=members["Healer"].mention if members["Healer"] else "None", inline=False)
@@ -149,23 +149,23 @@ async def lfm(interaction: discord.Interaction, difficulty:str, dungeon: str, ke
                 raise e
 
     # Function to check if a reaction is valid and relevant to the current group message
-    def check_reaction(reaction, user, group_message):
+    def check_reaction(reaction, user):
         return user != bot.user and reaction.message.id == group_message.id
 
     # Event handler for when a user removes a reaction from the group message
     @bot.event
-    async def on_reaction_remove(reaction, group_message, members, role_emojis):
+    async def on_reaction_remove(reaction):
         if reaction.message.id != group_message.id or reaction.user == bot.user:
             return
 
         # Handle the removal of a reaction by clearing the user's role
-        if str(reaction.emoji) == role_emojis["Tank"] and members["Tank"] == user:
+        if str(reaction.emoji) == choices.role_emojis["Tank"] and members["Tank"] == user:
             members["Tank"] = None
 
-        elif str(reaction.emoji) == role_emojis["Healer"] and members["Healer"] == user:
+        elif str(reaction.emoji) == choices.role_emojis["Healer"] and members["Healer"] == user:
             members["Healer"] = None
 
-        elif str(reaction.emoji) == role_emojis["DPS"]:
+        elif str(reaction.emoji) == choices.role_emojis["DPS"]:
             if user in members["DPS"]:
                 members["DPS"].remove(reaction.user)
 

@@ -87,7 +87,15 @@ class LFMModal(ui.Modal):
                 f"🕒   {formatted_time}\n"
                 f"{'**Notes:** ' + '```' + self.dungeon_note.value +'```' if self.dungeon_note.value else ''}\n"
             )
-        self.embed.color=discord.Color.from_rgb(0, 0, 255)
+        # Check if the dungeon note contains the word "caboose" (case insensitive)
+        if "caboose" in self.dungeon_note.value.lower():
+            self.embed.color = discord.Color.blue()
+        elif "delacour" in self.dungeon_note.value.lower():
+            self.embed.color = discord.Color.og_blurple()
+        elif "nastaskia" in self.dungeon_note.value.lower():
+            self.embed.color = discord.Color.blurple()
+        else:
+            self.embed.color = discord.Color.red()
 
 
         self.embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.avatar.url)
