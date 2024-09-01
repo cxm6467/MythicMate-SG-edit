@@ -3,13 +3,12 @@ import discord
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 import asyncio
-from asyncio import Lock
 from bot_modules import dungeons
 import bot_modules.choices as choices
 
 # Define the modal for the slash command
 class LFMModal(ui.Modal):
-    def __init__(self, interaction: discord.Interaction, difficulty: str, dungeon: str = '', key_level: str = '', role: str = '', res: str = '', lust: str = '', title="Looking for Members"):
+    def __init__(self, interaction: discord.Interaction, difficulty: str, dungeon: str = '', key_level: str = '', role: str = '', res: str = '', lust: str = '', members:dict = [], embed:discord.Embed = discord.Embed(), title="Looking for Members"):
         super().__init__(title=title)
         print(f"Initialized LFMModal with interaction user: {interaction.user}")
         self.user = interaction.user
@@ -19,6 +18,8 @@ class LFMModal(ui.Modal):
         self.role = role
         self.res = res
         self.lust = lust
+        self.members = members
+        self.embed = embed
 
         # Set up text inputs with defaults provided
         self.dungeon_date = ui.TextInput(
@@ -76,10 +77,8 @@ class LFMModal(ui.Modal):
         except (ValueError, AttributeError):
             formatted_time = "soon"  # Assign default value if exception is thrown
 
-        # Create an embed message to display the group information
-        embed = discord.Embed(
-            title=group_title,
-            description=(
+        self.embed.title = group_title
+        self.embed.description = (
                 f"**Difficulty** {self.difficulty} "
                 f"{self.key_level if self.key_level != 'N/A' else ''}\n"
                 f"**Battle Res?**\t**{'✅' if self.res else '❌'}**\n"
@@ -87,38 +86,25 @@ class LFMModal(ui.Modal):
                 f"📅   {formatted_date}\n"
                 f"🕒   {formatted_time}\n"
                 f"{'**Notes:** ' + '```' + self.dungeon_note.value +'```' if self.dungeon_note.value else ''}\n"
-            ),
-            color=discord.Color.from_rgb(0, 0, 255)
-        )
+            )
+        self.embed.color=discord.Color.from_rgb(0, 0, 255)
 
-        embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.avatar.url)
+
+        self.embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.avatar.url)
 
         # Set a thumbnail or image URL for the embed (use your own URL here)
-        embed.set_thumbnail(url=dungeons.dungeon_urls[self.dungeon])
-
-        # Initialize members based on the role the user selected
-        if "tank" in self.role.lower():
-            members = {"Tank": self.user, "Healer": None, "DPS": []}
-        elif "healer" in self.role.lower():
-            members = {"Tank": None, "Healer": self.user, "DPS": []}
-        elif "dps" in self.role.lower():
-            members = {"Tank": None, "Healer": None, "DPS": [self.user]}
-        else:
-            members = {"Tank": None, "Healer": None, "DPS": []}
-
-        print(f"Members: {members} user:{interaction.user.mention}")
-        print(f"Healer in members: {members['Healer']}")
+        self.embed.set_thumbnail(url=dungeons.dungeon_urls[self.dungeon])
 
         # Populate the embed with initial values for Tank, Healer, and DPS roles
-        embed.add_field(name="<:wow_tank:868737094242152488> Tank", value=members["Tank"].mention if members["Tank"] else "None", inline=False)
-        embed.add_field(name="<:wow_healer:868737094258950144> Healer", value=members["Healer"].mention if members["Healer"] else "None", inline=False)
+        self.embed.add_field(name="<:wow_tank:868737094242152488> Tank", value=self.members["Tank"].mention if self.members["Tank"] else "None", inline=False)
+        self.embed.add_field(name="<:wow_healer:868737094258950144> Healer", value=self.members["Healer"].mention if self.members["Healer"] else "None", inline=False)
 
         # Add one field for DPS with placeholders for up to three DPS members
-        dps_value = "\n".join([dps_user.mention for dps_user in members["DPS"]] + ["None"] * (3 - len(members["DPS"])))
-        embed.add_field(name="<:wow_dps:868737094011486229> DPS", value=dps_value, inline=False)
+        dps_value = "\n".join([dps_user.mention for dps_user in self.members["DPS"]] + ["None"] * (3 - len(self.members["DPS"])))
+        self.embed.add_field(name="<:wow_dps:868737094011486229> DPS", value=dps_value, inline=False)
 
         # Send the embed message as a follow-up to the deferred response
-        group_message = await interaction.followup.send(embed=embed)
+        group_message = await interaction.followup.send(embed=self.embed)
 
         # Add reaction emojis for Tank, Healer, DPS, and Clear Role
         for emoji in choices.role_emojis.values():
@@ -144,7 +130,7 @@ class LFMModal(ui.Modal):
 
         await thread.send(
             f"{group_title}\n"
-            f"Number of members: {len(members)}\n"
+            f"Number of members: {len(self.members)}\n"
             f"This thread will be deleted at {deletion_time} (EST), one hour after dungeon start."
         )
 
