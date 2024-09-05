@@ -1,6 +1,6 @@
 from discord import Webhook, ui
 import discord
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import asyncio
 from bot_modules import dungeons
@@ -8,30 +8,22 @@ import bot_modules.choices as choices
 
 # Define the modal for the slash command
 class LFMModal(ui.Modal):
-    def __init__(self, interaction: discord.Interaction, difficulty: str, dungeon: str = '', key_level: str = '', role: str = '', res: str = '', lust: str = '', members:dict = [], embed:discord.Embed = discord.Embed(), group_message: Webhook = None, title="Looking for Members"):
+    def __init__(self, interaction: discord.Interaction, difficulty: str, dungeon: str = '', level: str = '', role: str = '', members:dict = [], embed:discord.Embed = discord.Embed(), group_message: Webhook = None, title="Looking for Members"):
         super().__init__(title=title)
         print(f"Initialized LFMModal with interaction user: {interaction.user}")
         self.user = interaction.user
         self.difficulty = difficulty
         self.dungeon = dungeon
-        self.key_level = key_level
+        self.level = level
         self.role = role
-        self.res = res
-        self.lust = lust
         self.members = members
         self.embed = embed
         self.group_message = group_message
 
         # Set up text inputs with defaults provided
-        self.dungeon_date = ui.TextInput(
+        self.dungeon_date_time = ui.TextInput(
             label="Date",
-            placeholder="Enter a Date (MM/DD/YY)",
-            required=True
-        )
-        
-        self.dungeon_time = ui.TextInput(
-            label="Time",
-            placeholder="Enter a Time HH:MM 24hr EST (EST for now)",
+            placeholder="Enter a Date and time (MM/DD/YY)",
             required=True
         )
 
@@ -42,8 +34,7 @@ class LFMModal(ui.Modal):
         )
                 
         # Add inputs to the modal
-        self.add_item(self.dungeon_date)
-        self.add_item(self.dungeon_time)
+        self.add_item(self.dungeon_date_time)
         self.add_item(self.dungeon_note)
 
         self.interaction = interaction
@@ -53,40 +44,38 @@ class LFMModal(ui.Modal):
         # Defer the interaction to prevent timeout errors
         await interaction.response.defer()
 
-        group_title = f"Group for {self.dungeon}{' +' + self.key_level if self.key_level != 'N/A' else ''}"
+        group_title = f"Group for {self.dungeon}{' +' + self.level if self.level != 'N/A' else ''}"
 
         # Handle dungeon_date and dungeon_time formatting
-        try:
-            formatted_date = datetime.strptime(self.dungeon_date.value, "%m/%d/%y").strftime("%m/%d/%y")
-        except (ValueError, AttributeError):
-            formatted_date = "today"  # Assign default value if exception is thrown
+        # try:
+        #     formatted_date = datetime.strptime(self.dungeon_date.value, "%m/%d/%y").strftime("%m/%d/%y")
+        # except (ValueError, AttributeError):
+        #     formatted_date = "today"  # Assign default value if exception is thrown
         
-        # Handle dungeon_time formatting and conversion to EST
-        try:
-            input_time = self.dungeon_time.value # Make this EST
+        # # Handle dungeon_time formatting and conversion to EST
+        # try:
+        #     input_time = self.dungeon_time.value # Make this EST
 
-            # Parse the input time in 24-hour format
-            time_object = datetime.strptime(input_time, "%H:%M")
-            # datetime_combined = datetime.combine(current_date, time_object.time())
+        #     # Parse the input time in 24-hour format
+        #     time_object = datetime.strptime(input_time, "%H:%M")
+        #     # datetime_combined = datetime.combine(current_date, time_object.time())
 
-            # Convert to Eastern Time (US/Eastern) without using pytz
-            est_time = time_object.astimezone(ZoneInfo("America/New_York"))
+        #     # Convert to Eastern Time (US/Eastern) without using pytz
+        #     est_time = time_object.astimezone(ZoneInfo("America/New_York"))
 
-            # Format the time in 12-hour AM/PM format in EST
-            formatted_time = est_time.strftime("%I:%M %p")
-        except (ValueError, AttributeError):
-            formatted_time = "soon"  # Assign default value if exception is thrown
+        #     # Format the time in 12-hour AM/PM format in EST
+        #     formatted_time = est_time.strftime("%I:%M %p")
+        # except (ValueError, AttributeError):
+        #     formatted_time = "soon"  # Assign default value if exception is thrown
 
         self.embed.title = group_title
         self.embed.description = (
                 f"**Difficulty** {self.difficulty} "
-                f"{self.key_level if self.key_level != 'N/A' else ''}\n"
-                f"**Battle Res?**\t**{'✅' if self.res else '❌'}**\n"
-                f"**Lust?**\t**{'✅' if self.lust else '❌'}**\n"
-                f"📅   {formatted_date}\n"
-                f"🕒   {formatted_time}\n"
+                f"{self.level if self.level != 'N/A' else ''}\n"
+                f"📅   {self.formatted_date_time}\n"
                 f"{'**Notes:** ' + '```' + self.dungeon_note.value +'```' if self.dungeon_note.value else ''}\n"
             )
+        
         # Check if the dungeon note contains the word "caboose" (case insensitive)
         if "caboose" in self.dungeon_note.value.lower():
             self.embed.color = discord.Color.blue()
@@ -103,7 +92,6 @@ class LFMModal(ui.Modal):
             kwargs['icon_url'] = interaction.user.avatar.url
 
         self.embed.set_author(**kwargs)
-
 
         # Set a thumbnail or image URL for the embed (use your own URL here)
         self.embed.set_thumbnail(url=dungeons.dungeon_urls[self.dungeon])
@@ -134,26 +122,32 @@ class LFMModal(ui.Modal):
 
         # Calculate deletion time (one hour from now)
         # Use the current EST time for calculating deletion time (not the dungeon time)
-        current_time_est = datetime.now().astimezone(ZoneInfo("America/New_York"))
-        try:
-            deletion_time = current_time_est + timedelta(hours=1)
-            deletion_time_str = deletion_time.strftime("%I:%M %p")
+        # current_time_est = datetime.now().astimezone(ZoneInfo("America/New_York"))
+        # try:
+        #     deletion_time = current_time_est + timedelta(hours=1)
+        #     deletion_time_str = deletion_time.strftime("%I:%M %p")
             
-            # Calculate the duration to wait (in seconds)
-            wait_duration = (deletion_time - current_time_est).total_seconds()
-        except Exception as e:
-            deletion_time_str = 'soon'
-            wait_duration = 3600  # Fallback to 1 hour if calculation fails
-
+        #     # Calculate the duration to wait (in seconds)
+        #     wait_duration = (deletion_time - current_time_est).total_seconds()
+        # except Exception as e:
+        #     deletion_time_str = 'soon'
+        #     wait_duration = 3600  # Fallback to 1 hour if calculation fails
+        print(f"Debug: mention_list for guild_id={interaction.guild.id}, role={self.role}, difficulty={self.difficulty} is {mention_list}")
+        mention_list = choices.mention_helper(interaction.guild.id, self.role, self.difficulty)
         # Send a message in the thread indicating when it will be deleted
         await thread.send(
-            f"{group_title}\n"
+            f"Group for: {group_title}\n"
             f"Number of members: {len(self.members)}\n"
-            f"This thread will be deleted at {deletion_time_str} (EST), one hour after dungeon start."
+            f"Listing will be deleted at $time (one hour after start)."
+            f"{mention_list}"
         )
 
+
+
         # Wait for the calculated duration
-        await asyncio.sleep(wait_duration)
+        # print(f"Starting sleep for {wait_duration} seconds.")
+        await asyncio.sleep(3600) #an hour
+        # print(f"Completed sleep of {wait_duration} seconds.")
 
         # Delete the embed message and the thread after 60 seconds
         try:

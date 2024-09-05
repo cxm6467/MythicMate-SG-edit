@@ -100,15 +100,15 @@ async def on_reaction_add(reaction, user):
             if role == "Tank" and not members["Tank"]:
                 members["Tank"] = user
                 print(f"Debug: User {user.name} ({user.id}) assigned to Tank role.")
-                await reaction.message.thread.send(f"{user.mention} has been assigned to Tank for this group.")
+                await reaction.message.thread.send(f"{user.mention} has joined the group as Tank.")
             elif role == "Healer" and not members["Healer"]:
                 members["Healer"] = user
                 print(f"Debug: User {user.name} ({user.id}) assigned to Healer role.")
-                await reaction.message.thread.send(f"{user.mention} has been assigned to Heal for this group.")
+                await reaction.message.thread.send(f"{user.mention} has joined the group as Healer.")
             elif role == "DPS" and len(members["DPS"]) < 3:
                 members["DPS"].append(user)
                 print(f"Debug: User {user.name} ({user.id}) assigned to DPS role.")
-                await reaction.message.thread.send(f"{user.mention} has been assigned to DPS for this group.")
+                await reaction.message.thread.send(f"{user.mention} has joined the group as Dps.")
 
             # Update the embed
             print(f"Debug: Calling update_embed From on_reaction_add With: {reaction}")
@@ -188,15 +188,20 @@ async def on_reaction_remove(reaction, user):
     if str(reaction.emoji) == choices.role_emojis["Tank"] and members["Tank"] == user:
         members["Tank"] = None
         print(f"Debug: Tank role removed from {user.name} ({user.id})")
+        await reaction.message.thread.send(f"{user.mention} has left the group")
+
 
     elif str(reaction.emoji) == choices.role_emojis["Healer"] and members["Healer"] == user:
         members["Healer"] = None
         print(f"Debug: Healer role removed from {user.name} ({user.id})")
+        await reaction.message.thread.send(f"{user.mention} has left the group")
 
     elif str(reaction.emoji) == choices.role_emojis["DPS"]:
         if user in members["DPS"]:
             members["DPS"].remove(user)
             print(f"Debug: DPS role removed from {user.name} ({user.id})")
+            await reaction.message.thread.send(f"{user.mention} has left the group")
+
 
     print(f"Debug: Calling update_embed From on_reaction_remove With: {reaction}")
     await update_embed(reaction)  # Update the embed with the role removed
@@ -205,13 +210,11 @@ async def on_reaction_remove(reaction, user):
 
 # Slash command to invoke the modal
 @bot.tree.command(name="lfm", description="Start looking for members for a dungeon run.")
-@app_commands.describe(difficulty="Choose a dungeon difficulty", dungeon='Choose a dungeon', key_level='Enter the key level or N/A', role="Enter your role", res="Do you bring a battle res?", lust="Do you bring a lust?")
+@app_commands.describe(difficulty="Choose a dungeon difficulty", dungeon='Choose a dungeon', level='Enter the key level or N/A', role="Enter your role")
 @app_commands.choices(difficulty=choices.difficulty_choices)
 @app_commands.choices(dungeon=choices.dungeon_choices)
 @app_commands.choices(role=choices.role_choices)
-@app_commands.choices(res=choices.yes_no_choices)
-@app_commands.choices(lust=choices.yes_no_choices)
-async def lfm(interaction: discord.Interaction, difficulty: str, dungeon: str, key_level: str, role: str, res: str = None, lust: str = None):
+async def lfm(interaction: discord.Interaction, difficulty: str, dungeon: str, level: str, role: str):
     global members, group_message, embed
 
     full_dungeon_name = dungeons.translate_dungeon_name(dungeon)
@@ -230,7 +233,7 @@ async def lfm(interaction: discord.Interaction, difficulty: str, dungeon: str, k
     else:
         members = {"Tank": None, "Healer": None, "DPS": []}
 
-    lfmModal = modal.LFMModal(interaction, difficulty, full_dungeon_name, key_level, role, res, lust, members, embed=discord.Embed(description=""), group_message=interaction.message)
+    lfmModal = modal.LFMModal(interaction, difficulty, full_dungeon_name, level, role, members, embed=discord.Embed(description=""), group_message=interaction.message)
     await interaction.response.send_modal(lfmModal)
 
 
@@ -258,13 +261,12 @@ async def lfm(interaction: discord.Interaction, difficulty: str, dungeon: str, k
 
 # Slash command to invoke the modal
 @bot.tree.command(name="lfm", description="Start looking for members for a dungeon run.")
-@app_commands.describe(difficulty="Choose a dungeon difficulty", dungeon='Choose a dungeon', key_level='Enter the key level or N/A', role="Enter your role", res="Do you bring a battle res?", lust="Do you bring a lust?")
+@app_commands.describe(difficulty="Choose a dungeon difficulty", dungeon='Choose a dungeon', level='Enter the key level or N/A', role="Enter your role")
 @app_commands.choices(difficulty=choices.difficulty_choices)
 @app_commands.choices(dungeon=choices.dungeon_choices)
+@app_commands.choices(level=choices.level_choices)
 @app_commands.choices(role=choices.role_choices)
-@app_commands.choices(res=choices.yes_no_choices)
-@app_commands.choices(lust=choices.yes_no_choices)
-async def lfm(interaction: discord.Interaction, difficulty: str, dungeon: str, key_level: str, role: str, res: str = None, lust: str = None):
+async def lfm(interaction: discord.Interaction, difficulty: str, dungeon: str, level: str, role: str):
     global members, group_message, embed
 
     full_dungeon_name = dungeons.translate_dungeon_name(dungeon)
@@ -283,7 +285,7 @@ async def lfm(interaction: discord.Interaction, difficulty: str, dungeon: str, k
     else:
         members = {"Tank": None, "Healer": None, "DPS": []}
 
-    lfmModal = modal.LFMModal(interaction, difficulty, full_dungeon_name, key_level, role, res, lust, members, embed=discord.Embed(description=""), group_message=interaction.message)
+    lfmModal = modal.LFMModal(interaction, difficulty, full_dungeon_name, level, role, members, embed=discord.Embed(description=""), group_message=interaction.message)
     await interaction.response.send_modal(lfmModal)
 
 
