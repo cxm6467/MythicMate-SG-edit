@@ -17,14 +17,16 @@ dungeon_choices = [
     app_commands.Choice(name="Mists of Tirna Scithe", value="mists"),
     app_commands.Choice(name="The Necrotic Wake", value="necrotic wake"),
     app_commands.Choice(name="Siege of Boralus", value="siege"),
-    app_commands.Choice(name="Grim Batol", value="grim")
+    app_commands.Choice(name="Grim Batol", value="grim"),
+    app_commands.Choice(name="Delve", value="Delve")
 ]
 
 difficulty_choices = [
     app_commands.Choice(name="M+", value="M+"),
     app_commands.Choice(name="M0", value="M0"),
     app_commands.Choice(name="Normal", value="Normal"),
-    app_commands.Choice(name="Heroic", value="Heroic")
+    app_commands.Choice(name="Heroic", value="Heroic"),
+    app_commands.Choice(name="Delve", value="Delve")
 ]
 
 role_choices = [

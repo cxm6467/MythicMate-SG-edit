@@ -9,7 +9,8 @@ dungeon_aliases = {
     "Mists of Tirna Scithe": ["mists", "tirna", "scithe", "mots"],
     "The Necrotic Wake": ["nw", "necrotic wake", "necrotic"],
     "Siege of Boralus": ["siege", "boralus", "sob"],
-    "Grim Batol": ["grim", "batol", "gb"]
+    "Grim Batol": ["grim", "batol", "gb"],
+    "Delve": ["Delve", "delve"]
 }
 
 # Define the available dungeons and their abbreviations
@@ -22,7 +23,8 @@ dungeon_urls = {
     "Mists of Tirna Scithe": "https://wow.zamimg.com/images/wow/journal/ui-ej-boss-mistcaller.png",
     "The Necrotic Wake": "https://wow.zamimg.com/images/wow/journal/ui-ej-boss-nalthortherimebinder.png",
     "Siege of Boralus": "https://wow.zamimg.com/images/wow/journal/ui-ej-boss-viqgoth.png",
-    "Grim Batol": "https://wow.zamimg.com/images/wow/journal/ui-ej-boss-erudax-updated.png"
+    "Grim Batol": "https://wow.zamimg.com/images/wow/journal/ui-ej-boss-erudax-updated.png",
+    "Delve":"https://wow.zamimg.com/uploads/screenshots/small/1170483.jpg"
 }
 
 # Function to translate user input to the full dungeon name

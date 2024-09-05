@@ -1,4 +1,4 @@
-from discord import ui
+from discord import Webhook, ui
 import discord
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -8,7 +8,7 @@ import bot_modules.choices as choices
 
 # Define the modal for the slash command
 class LFMModal(ui.Modal):
-    def __init__(self, interaction: discord.Interaction, difficulty: str, dungeon: str = '', key_level: str = '', role: str = '', res: str = '', lust: str = '', members:dict = [], embed:discord.Embed = discord.Embed(), title="Looking for Members"):
+    def __init__(self, interaction: discord.Interaction, difficulty: str, dungeon: str = '', key_level: str = '', role: str = '', res: str = '', lust: str = '', members:dict = [], embed:discord.Embed = discord.Embed(), group_message: Webhook = None, title="Looking for Members"):
         super().__init__(title=title)
         print(f"Initialized LFMModal with interaction user: {interaction.user}")
         self.user = interaction.user
@@ -20,6 +20,7 @@ class LFMModal(ui.Modal):
         self.lust = lust
         self.members = members
         self.embed = embed
+        self.group_message = group_message
 
         # Set up text inputs with defaults provided
         self.dungeon_date = ui.TextInput(
@@ -48,6 +49,7 @@ class LFMModal(ui.Modal):
         self.interaction = interaction
 
     async def on_submit(self, interaction: discord.Interaction):
+        global thread
         # Defer the interaction to prevent timeout errors
         await interaction.response.defer()
 
@@ -62,12 +64,10 @@ class LFMModal(ui.Modal):
         # Handle dungeon_time formatting and conversion to EST
         try:
             input_time = self.dungeon_time.value # Make this EST
-            current_date = datetime.now().date()
 
             # Parse the input time in 24-hour format
             time_object = datetime.strptime(input_time, "%H:%M")
             # datetime_combined = datetime.combine(current_date, time_object.time())
-
 
             # Convert to Eastern Time (US/Eastern) without using pytz
             est_time = time_object.astimezone(ZoneInfo("America/New_York"))
@@ -98,7 +98,12 @@ class LFMModal(ui.Modal):
             self.embed.color = discord.Color.red()
 
 
-        self.embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.avatar.url)
+        kwargs = {'name': interaction.user.display_name}
+        if interaction.user.avatar and interaction.user.avatar.url:
+            kwargs['icon_url'] = interaction.user.avatar.url
+
+        self.embed.set_author(**kwargs)
+
 
         # Set a thumbnail or image URL for the embed (use your own URL here)
         self.embed.set_thumbnail(url=dungeons.dungeon_urls[self.dungeon])
@@ -112,42 +117,47 @@ class LFMModal(ui.Modal):
         self.embed.add_field(name="<:wow_dps:868737094011486229> DPS", value=dps_value, inline=False)
 
         # Send the embed message as a follow-up to the deferred response
-        group_message = await interaction.followup.send(embed=self.embed)
+        self.group_message = await interaction.followup.send(embed=self.embed)
 
         # Add reaction emojis for Tank, Healer, DPS, and Clear Role
         for emoji in choices.role_emojis.values():
-            await group_message.add_reaction(emoji)
+            await self.group_message.add_reaction(emoji)
 
         # Create a thread for this group message using the channel
         thread = await interaction.channel.create_thread(
             name=group_title,
-            message=group_message,  # Attach the thread to the group message
+            message=self.group_message,  # Attach the thread to the group message
             auto_archive_duration=60,  # Auto-archive after 60 minutes of inactivity
             reason="Starting group thread for dungeon run",
             type=discord.ChannelType.private_thread
         )
 
-        # Send a message in the thread indicating when it will be deleted
         # Calculate deletion time (one hour from now)
         # Use the current EST time for calculating deletion time (not the dungeon time)
-        # current_time_est = datetime.now().astimezone(ZoneInfo("America/New_York"))
+        current_time_est = datetime.now().astimezone(ZoneInfo("America/New_York"))
         try:
-            deletion_time = (est_time + timedelta(hours=1)).strftime("%I:%M %p")
+            deletion_time = current_time_est + timedelta(hours=1)
+            deletion_time_str = deletion_time.strftime("%I:%M %p")
+            
+            # Calculate the duration to wait (in seconds)
+            wait_duration = (deletion_time - current_time_est).total_seconds()
         except Exception as e:
-            deletion_time = 'soon'
+            deletion_time_str = 'soon'
+            wait_duration = 3600  # Fallback to 1 hour if calculation fails
 
+        # Send a message in the thread indicating when it will be deleted
         await thread.send(
             f"{group_title}\n"
             f"Number of members: {len(self.members)}\n"
-            f"This thread will be deleted at {deletion_time} (EST), one hour after dungeon start."
+            f"This thread will be deleted at {deletion_time_str} (EST), one hour after dungeon start."
         )
 
-        # Wait for one hour (3600 seconds)
-        await asyncio.sleep(3600)
+        # Wait for the calculated duration
+        await asyncio.sleep(wait_duration)
 
         # Delete the embed message and the thread after 60 seconds
         try:
-            await group_message.delete()  # Delete the embed message
+            await self.group_message.delete()  # Delete the embed message
             await thread.delete()  # Delete the thread
         except discord.NotFound:
             print("Message or thread not found, perhaps it was deleted earlier.")
