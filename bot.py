@@ -27,7 +27,6 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 members = {"Tank": None, "Healer": None, "DPS": []}
 group_message: WebhookMessage
 thread: WebhookMessage
-embed = discord.Embed(description="")
 lock = asyncio.Lock()
 
 @bot.event
@@ -45,7 +44,7 @@ async def on_reaction_add(reaction, user):
     global group_message
     group_message = reaction.message
     print(f"Debug: Reaction added - Emoji: {reaction.emoji}, User: {user.name} ({user.id})")
-    print(f"Debug: Group Message: {reaction.message.id} vs Reaction: {reaction.message.id}")
+    print(f"Debug: Group Message: {group_message.id} vs Reaction: {reaction.message.id}")
 
     if user == bot.user:
         print("Debug: Reaction is from the bot itself.")
@@ -125,53 +124,52 @@ async def on_reaction_add(reaction, user):
 
 async def update_embed(reaction):
     global group_message
+    print("Debug: Updating embed:")
     
-    group_message = reaction.message
-
-    async with lock:
+    #async with lock:
         # Print debug information about the embed update
-        print("Debug: Updating embed with current members.")
+    print("Debug: Updating embed with current members.")
+    
+    # Check if the message contains embeds
+    if reaction.message.embeds:
+        # Get the first embed from the message
+        embed = group_message.embeds[0]
         
-        # Check if the message contains embeds
-        if group_message.embeds:
-            # Get the first embed from the message
-            embed = group_message.embeds[0]
+        # Create a mutable copy of the embed
+        embed = discord.Embed.from_dict(embed.to_dict())
+        
+        # Update the embed fields with the current members
+        embed.set_field_at(0, name="Tank", value=members["Tank"].mention if members["Tank"] else "None", inline=False)
+        embed.set_field_at(1, name="Healer", value=members["Healer"].mention if members["Healer"] else "None", inline=False)
+
+        # Update the DPS field with the current DPS members
+        dps_value = "\n".join([dps_user.mention for dps_user in members["DPS"]] + ["None"] * (3 - len(members["DPS"])))
+        embed.set_field_at(2, name="DPS", value=dps_value, inline=False)
+
+        try:
+            # Print debug information before attempting to edit the embed
+            print("Debug: Attempting to edit the embed message.")
             
-            # Create a mutable copy of the embed
-            embed = discord.Embed.from_dict(embed.to_dict())
-            
-            # Update the embed fields with the current members
-            embed.set_field_at(0, name="Tank", value=members["Tank"].mention if members["Tank"] else "None", inline=False)
-            embed.set_field_at(1, name="Healer", value=members["Healer"].mention if members["Healer"] else "None", inline=False)
+            # Try to edit the original embed message with the updated information
+            await group_message.edit(embed=embed)
 
-            # Update the DPS field with the current DPS members
-            dps_value = "\n".join([dps_user.mention for dps_user in members["DPS"]] + ["None"] * (3 - len(members["DPS"])))
-            embed.set_field_at(2, name="DPS", value=dps_value, inline=False)
+            # Print debug information after successful edit
+            print("Debug: Embed message successfully edited.")
+        except discord.errors.HTTPException as e:
+            print(f"Debug: Exception occurred while editing embed: {e}")
 
-            try:
-                # Print debug information before attempting to edit the embed
-                print("Debug: Attempting to edit the embed message.")
-                
-                # Try to edit the original embed message with the updated information
-                await group_message.edit(embed=embed)
+            if e.status == 401:
+                print("Debug: Invalid webhook token, recreating the message.")
 
-                # Print debug information after successful edit
-                print("Debug: Embed message successfully edited.")
-            except discord.errors.HTTPException as e:
-                print(f"Debug: Exception occurred while editing embed: {e}")
+                # If editing fails due to an invalid webhook token, recreate the message
+                new_group_message = await group_message.channel.send(embed=embed)
+                await group_message.delete()  # Delete the old message
+                group_message = new_group_message
 
-                if e.status == 401:
-                    print("Debug: Invalid webhook token, recreating the message.")
-
-                    # If editing fails due to an invalid webhook token, recreate the message
-                    new_group_message = await group_message.channel.send(embed=embed)
-                    await group_message.delete()  # Delete the old message
-                    group_message = new_group_message
-
-                    # Print debug information after recreating the message
-                    print("Debug: New embed message created and old message deleted.")
-                else:
-                    raise e
+                # Print debug information after recreating the message
+                print("Debug: New embed message created and old message deleted.")
+            else:
+                raise e
         else:
             print("Debug: No embed found in the message.")
 
@@ -183,28 +181,26 @@ async def on_reaction_remove(reaction, user):
     group_message = reaction.message
     if user == bot.user:
         return
-
-    async with lock:
         # Print debug information about the reaction removal
-        print(f"Debug: Reaction removed: {reaction.emoji} by {user.name} ({user.id})")
+    print(f"Debug: Reaction removed: {reaction.emoji} by {user.name} ({user.id})")
 
-        # Handle the removal of a reaction by clearing the user's role
-        if str(reaction.emoji) == choices.role_emojis["Tank"] and members["Tank"] == user:
-            members["Tank"] = None
-            print(f"Debug: Tank role removed from {user.name} ({user.id})")
+    # Handle the removal of a reaction by clearing the user's role
+    if str(reaction.emoji) == choices.role_emojis["Tank"] and members["Tank"] == user:
+        members["Tank"] = None
+        print(f"Debug: Tank role removed from {user.name} ({user.id})")
 
-        elif str(reaction.emoji) == choices.role_emojis["Healer"] and members["Healer"] == user:
-            members["Healer"] = None
-            print(f"Debug: Healer role removed from {user.name} ({user.id})")
+    elif str(reaction.emoji) == choices.role_emojis["Healer"] and members["Healer"] == user:
+        members["Healer"] = None
+        print(f"Debug: Healer role removed from {user.name} ({user.id})")
 
-        elif str(reaction.emoji) == choices.role_emojis["DPS"]:
-            if user in members["DPS"]:
-                members["DPS"].remove(user)
-                print(f"Debug: DPS role removed from {user.name} ({user.id})")
+    elif str(reaction.emoji) == choices.role_emojis["DPS"]:
+        if user in members["DPS"]:
+            members["DPS"].remove(user)
+            print(f"Debug: DPS role removed from {user.name} ({user.id})")
 
-        print(f"Debug: Calling update_embed From on_reaction_remove With: {reaction}")
-        await update_embed(reaction)  # Update the embed with the role removed
-        print("Debug: Embed updated after reaction removal.")
+    print(f"Debug: Calling update_embed From on_reaction_remove With: {reaction}")
+    await update_embed(reaction)  # Update the embed with the role removed
+    print("Debug: Embed updated after reaction removal.")
 
 
 # Slash command to invoke the modal
@@ -234,7 +230,7 @@ async def lfm(interaction: discord.Interaction, difficulty: str, dungeon: str, k
     else:
         members = {"Tank": None, "Healer": None, "DPS": []}
 
-    lfmModal = modal.LFMModal(interaction, difficulty, full_dungeon_name, key_level, role, res, lust, members, embed, group_message=interaction.message)
+    lfmModal = modal.LFMModal(interaction, difficulty, full_dungeon_name, key_level, role, res, lust, members, embed=discord.Embed(description=""), group_message=interaction.message)
     await interaction.response.send_modal(lfmModal)
 
 
@@ -260,5 +256,57 @@ async def lfm(interaction: discord.Interaction, difficulty: str, dungeon: str, k
             async with lock:
                 await reaction.message.remove_reaction("✅", user)
 
+# Slash command to invoke the modal
+@bot.tree.command(name="lfm", description="Start looking for members for a dungeon run.")
+@app_commands.describe(difficulty="Choose a dungeon difficulty", dungeon='Choose a dungeon', key_level='Enter the key level or N/A', role="Enter your role", res="Do you bring a battle res?", lust="Do you bring a lust?")
+@app_commands.choices(difficulty=choices.difficulty_choices)
+@app_commands.choices(dungeon=choices.dungeon_choices)
+@app_commands.choices(role=choices.role_choices)
+@app_commands.choices(res=choices.yes_no_choices)
+@app_commands.choices(lust=choices.yes_no_choices)
+async def lfm(interaction: discord.Interaction, difficulty: str, dungeon: str, key_level: str, role: str, res: str = None, lust: str = None):
+    global members, group_message, embed
+
+    full_dungeon_name = dungeons.translate_dungeon_name(dungeon)
+
+    if not full_dungeon_name:
+        await interaction.response.send_message(f"Sorry, I couldn't recognize the dungeon name '{dungeon}'. Please try again with a valid name or abbreviation.", ephemeral=True)
+        return
+
+    # Initialize members based on role
+    if "tank" in role.lower():
+        members = {"Tank": interaction.user, "Healer": None, "DPS": []}
+    elif "healer" in role.lower():
+        members = {"Tank": None, "Healer": interaction.user, "DPS": []}
+    elif "dps" in role.lower():
+        members = {"Tank": None, "Healer": None, "DPS": [interaction.user]}
+    else:
+        members = {"Tank": None, "Healer": None, "DPS": []}
+
+    lfmModal = modal.LFMModal(interaction, difficulty, full_dungeon_name, key_level, role, res, lust, members, embed=discord.Embed(description=""), group_message=interaction.message)
+    await interaction.response.send_modal(lfmModal)
+
+
+    # Function to check if all roles are filled and the group is complete
+    def check_completion(reaction, user):
+        return (
+            str(reaction.emoji) == "✅"
+            and user in [members["Tank"], members["Healer"], *members["DPS"]]
+        )
+
+    while True:
+        reaction, user = await bot.wait_for('reaction_add', check=check_completion)
+
+        if reaction.emoji == "✅" and user in [members["Tank"], members["Healer"], *members["DPS"]]:
+            async with lock:
+                await reaction.message.delete()  # Delete the group message when the group is complete
+            await interaction.followup.send(
+                f"The group for {full_dungeon_name} has completed the dungeon. The message has been removed.",
+                ephemeral=True
+            )
+            break
+        else:
+            async with lock:
+                await reaction.message.remove_reaction("✅", user)
 # Run the bot with the token loaded from the environment variables
 bot.run(TOKEN)
