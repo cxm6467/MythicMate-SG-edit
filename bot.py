@@ -108,7 +108,7 @@ async def on_reaction_add(reaction, user):
             elif role == "DPS" and len(members["DPS"]) < 3:
                 members["DPS"].append(user)
                 print(f"Debug: User {user.name} ({user.id}) assigned to DPS role.")
-                await reaction.message.thread.send(f"{user.mention} has joined the group as Dps.")
+                await reaction.message.thread.send(f"{user.mention} has joined the group as DPS.")
 
             # Update the embed
             print(f"Debug: Calling update_embed From on_reaction_add With: {reaction}")
@@ -213,58 +213,6 @@ async def on_reaction_remove(reaction, user):
 @app_commands.describe(difficulty="Choose a dungeon difficulty", dungeon='Choose a dungeon', level='Enter the key level or N/A', role="Enter your role")
 @app_commands.choices(difficulty=choices.difficulty_choices)
 @app_commands.choices(dungeon=choices.dungeon_choices)
-@app_commands.choices(role=choices.role_choices)
-async def lfm(interaction: discord.Interaction, difficulty: str, dungeon: str, level: str, role: str):
-    global members, group_message, embed
-
-    full_dungeon_name = dungeons.translate_dungeon_name(dungeon)
-
-    if not full_dungeon_name:
-        await interaction.response.send_message(f"Sorry, I couldn't recognize the dungeon name '{dungeon}'. Please try again with a valid name or abbreviation.", ephemeral=True)
-        return
-
-    # Initialize members based on role
-    if "tank" in role.lower():
-        members = {"Tank": interaction.user, "Healer": None, "DPS": []}
-    elif "healer" in role.lower():
-        members = {"Tank": None, "Healer": interaction.user, "DPS": []}
-    elif "dps" in role.lower():
-        members = {"Tank": None, "Healer": None, "DPS": [interaction.user]}
-    else:
-        members = {"Tank": None, "Healer": None, "DPS": []}
-
-    lfmModal = modal.LFMModal(interaction, difficulty, full_dungeon_name, level, role, members, embed=discord.Embed(description=""), group_message=interaction.message)
-    await interaction.response.send_modal(lfmModal)
-
-
-    # Function to check if all roles are filled and the group is complete
-    def check_completion(reaction, user):
-        return (
-            str(reaction.emoji) == "✅"
-            and user in [members["Tank"], members["Healer"], *members["DPS"]]
-        )
-
-    while True:
-        reaction, user = await bot.wait_for('reaction_add', check=check_completion)
-
-        if reaction.emoji == "✅" and user in [members["Tank"], members["Healer"], *members["DPS"]]:
-            async with lock:
-                await reaction.message.delete()  # Delete the group message when the group is complete
-            await interaction.followup.send(
-                f"The group for {full_dungeon_name} has completed the dungeon. The message has been removed.",
-                ephemeral=True
-            )
-            break
-        else:
-            async with lock:
-                await reaction.message.remove_reaction("✅", user)
-
-# Slash command to invoke the modal
-@bot.tree.command(name="lfm", description="Start looking for members for a dungeon run.")
-@app_commands.describe(difficulty="Choose a dungeon difficulty", dungeon='Choose a dungeon', level='Enter the key level or N/A', role="Enter your role")
-@app_commands.choices(difficulty=choices.difficulty_choices)
-@app_commands.choices(dungeon=choices.dungeon_choices)
-@app_commands.choices(level=choices.level_choices)
 @app_commands.choices(role=choices.role_choices)
 async def lfm(interaction: discord.Interaction, difficulty: str, dungeon: str, level: str, role: str):
     global members, group_message, embed

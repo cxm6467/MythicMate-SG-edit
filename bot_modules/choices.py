@@ -1,6 +1,6 @@
 # bot_modules/choices.py
 import discord.app_commands as app_commands
-
+import re
 from bot_modules import constants
 
 # Define the roles for Tank, Healer, and DPS using emoji symbols
@@ -21,7 +21,6 @@ dungeon_choices = [
     app_commands.Choice(name="Siege of Boralus", value="siege"),
     app_commands.Choice(name="Any", value="any"),
     app_commands.Choice(name="Grim Batol", value="grim"),
-    app_commands.Choice(name="Any", value="Any")
 ]
 
 difficulty_choices = [
@@ -87,25 +86,86 @@ dev_mention_choices = {
 }
 
 def mention_helper(server_id: str, role: str = None, difficulty: str = None):
+    print(f"Comparing server_id: {server_id} with constants: "
+          f"SG_DEV_SERVER_ID={constants.SG_DEV_SERVER_ID} and "
+          f"SG_PROD_SERVER_ID={constants.SG_PROD_SERVER_ID}")
+
     # Determine the mention choices based on the server ID
-    if server_id in constants.SG_DEV_SERVER_ID:
+    if str(server_id) in str(constants.SG_DEV_SERVER_ID):
         mention_choices = dev_mention_choices
-    elif server_id in constants.SG_PROD_SERVER_ID:
+    elif str(server_id) in str(constants.SG_PROD_SERVER_ID):
         mention_choices = prod_mention_choices
     else:
         return None
-    
-    # Filter mention choices based on role and difficulty
-    filtered_mentions = {}
+
+    # Initialize lists for role and difficulty mentions
+    role_mentions = []
+    difficulty_mentions = []
+
+    # Define valid roles
+    valid_roles = {"tank", "healer", "dps"}
 
     if role:
-        role_mention = mention_choices.get(f"{role}_role")
-        if role_mention:
-            filtered_mentions["role"] = role_mention
+        if role.lower() in valid_roles:
+            role_key = f"{role}_role"
+            role_mention = mention_choices.get(role_key.lower())
+            
+            if role_mention:
+                # Initialize difficulty_key for filtering role mentions
+                difficulty_key = f"{difficulty}_role" if difficulty else None
+
+                # Add all valid role mentions except the provided role, and exclude any difficulties
+                role_mentions = [
+                    mention for key, mention in mention_choices.items()
+                    if key.lower() != role_key.lower() and any(valid_role in key.lower() for valid_role in valid_roles)
+                ]
+            else:
+                print(f"No role mention found for key: {role_key}")
+        else:
+            print(f"Invalid role provided: {role}")
 
     if difficulty:
-        difficulty_mention = mention_choices.get(f"{difficulty}_role")
+        difficulty_key = f"{difficulty}_role"
+        difficulty_mention = mention_choices.get(difficulty_key.lower())
+        
         if difficulty_mention:
-            filtered_mentions["difficulty"] = difficulty_mention
+            difficulty_mentions = [difficulty_mention]
+        else:
+            print(f"No difficulty mention found for key: {difficulty_key}")
 
-    return filtered_mentions
+    # Combine the lists: role mentions (excluding the provided role) and difficulty mentions
+    mentions_to_return = role_mentions + difficulty_mentions
+
+    # Print the mentions for debugging purposes
+    print(f"Filtered role mentions (excluding the provided role and difficulties): {role_mentions}")
+    print(f"Difficulty mentions: {difficulty_mentions}")
+    print(f"Combined mentions: {mentions_to_return}")
+
+    # Return the combined mentions
+    return mentions_to_return
+
+
+
+
+
+
+
+def extract_role_from_mention(mention: str) -> str:
+
+    # Regular expression to extract the part between colons
+    match = re.search(r'<:\w+:(\d+)>', mention)
+    
+    if match:
+        # Extract the content inside the mention
+        content = mention.split(':')[1]
+        
+        # Check for keywords
+        if 'healer' in content:
+            return 'healer'
+        elif 'dps' in content:
+            return 'dps'
+        elif 'tank' in content:
+            return 'tank'
+    
+    # Return an empty string if no keyword is found
+    return ''

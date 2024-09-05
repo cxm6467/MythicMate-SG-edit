@@ -1,6 +1,6 @@
 from discord import Webhook, ui
 import discord
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 import asyncio
 from bot_modules import dungeons
@@ -19,11 +19,12 @@ class LFMModal(ui.Modal):
         self.members = members
         self.embed = embed
         self.group_message = group_message
+        self.formatted_date_time = datetime.now()
 
         # Set up text inputs with defaults provided
         self.dungeon_date_time = ui.TextInput(
             label="Date",
-            placeholder="Enter a Date and time (MM/DD/YY)",
+            placeholder="Enter a Date and time (MM/DD/YY HH:MM)",
             required=True
         )
 
@@ -72,7 +73,7 @@ class LFMModal(ui.Modal):
         self.embed.description = (
                 f"**Difficulty** {self.difficulty} "
                 f"{self.level if self.level != 'N/A' else ''}\n"
-                f"📅   {self.formatted_date_time}\n"
+                f"📅   <t: {self.formatted_date_time}:F>\n"
                 f"{'**Notes:** ' + '```' + self.dungeon_note.value +'```' if self.dungeon_note.value else ''}\n"
             )
         
@@ -132,16 +133,19 @@ class LFMModal(ui.Modal):
         # except Exception as e:
         #     deletion_time_str = 'soon'
         #     wait_duration = 3600  # Fallback to 1 hour if calculation fails
+
+        mention_list = choices.mention_helper(interaction.guild.id, choices.extract_role_from_mention(self.role), self.difficulty)
         print(f"Debug: mention_list for guild_id={interaction.guild.id}, role={self.role}, difficulty={self.difficulty} is {mention_list}")
-        mention_list = choices.mention_helper(interaction.guild.id, self.role, self.difficulty)
         # Send a message in the thread indicating when it will be deleted
+        
+        mention_list_str = '\n'.join(mention_list)
+
         await thread.send(
             f"Group for: {group_title}\n"
             f"Number of members: {len(self.members)}\n"
-            f"Listing will be deleted at $time (one hour after start)."
-            f"{mention_list}"
+            f"Listing will be deleted at time (one hour after start).\n"
+            f"{mention_list_str}"
         )
-
 
 
         # Wait for the calculated duration
