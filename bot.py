@@ -54,7 +54,7 @@ async def on_reaction_add(reaction, user):
         # Handle the "Clear Role" reaction
         if str(reaction.emoji) == choices.role_emojis.get("Clear Role"):
             print(f"Debug: Clear Role reaction detected by {user.name} ({user.id})")
-            await reaction.message.thread.send(f"{user.mention} has left the group.")
+            await reaction.message.thread.send(f"{user.name} has left the group.")
 
             # Clear the user's role
             if user == members.get("Tank"):
