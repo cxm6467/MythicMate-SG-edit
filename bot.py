@@ -54,6 +54,7 @@ async def on_reaction_add(reaction, user):
         # Handle the "Clear Role" reaction
         if str(reaction.emoji) == choices.role_emojis.get("Clear Role"):
             print(f"Debug: Clear Role reaction detected by {user.name} ({user.id})")
+            await reaction.message.thread.send(f"{user.mention} has left the group.")
 
             # Clear the user's role
             if user == members.get("Tank"):
@@ -179,29 +180,20 @@ async def update_embed(reaction):
 async def on_reaction_remove(reaction, user):
     global group_message
     group_message = reaction.message
+    print(f"{reaction}")
     if user == bot.user:
         return
         # Print debug information about the reaction removal
-    print(f"Debug: Reaction removed: {reaction.emoji} by {user.name} ({user.id})")
 
+    await reaction.message.thread.send(f"A {reaction.emoji} has left the group")
     # Handle the removal of a reaction by clearing the user's role
     if str(reaction.emoji) == choices.role_emojis["Tank"] and members["Tank"] == user:
         members["Tank"] = None
-        print(f"Debug: Tank role removed from {user.name} ({user.id})")
-        await reaction.message.thread.send(f"{user.mention} has left the group")
-
-
     elif str(reaction.emoji) == choices.role_emojis["Healer"] and members["Healer"] == user:
         members["Healer"] = None
-        print(f"Debug: Healer role removed from {user.name} ({user.id})")
-        await reaction.message.thread.send(f"{user.mention} has left the group")
-
     elif str(reaction.emoji) == choices.role_emojis["DPS"]:
         if user in members["DPS"]:
             members["DPS"].remove(user)
-            print(f"Debug: DPS role removed from {user.name} ({user.id})")
-            await reaction.message.thread.send(f"{user.mention} has left the group")
-
 
     print(f"Debug: Calling update_embed From on_reaction_remove With: {reaction}")
     await update_embed(reaction)  # Update the embed with the role removed

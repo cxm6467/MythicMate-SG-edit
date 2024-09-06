@@ -3,7 +3,7 @@ import discord
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 import asyncio
-from bot_modules import dungeons
+from bot_modules import dungeons, utils
 import bot_modules.choices as choices
 
 # Define the modal for the slash command
@@ -24,7 +24,7 @@ class LFMModal(ui.Modal):
         # Set up text inputs with defaults provided
         self.dungeon_date_time = ui.TextInput(
             label="Date",
-            placeholder="Enter a Date and time (MM/DD/YY HH:MM)",
+            placeholder="Enter a Date and time (MM/DD/YY HH:MM) EST 24hr",
             required=True
         )
 
@@ -47,33 +47,14 @@ class LFMModal(ui.Modal):
 
         group_title = f"Group for {self.dungeon}{' +' + self.level if self.level != 'N/A' else ''}"
 
-        # Handle dungeon_date and dungeon_time formatting
-        # try:
-        #     formatted_date = datetime.strptime(self.dungeon_date.value, "%m/%d/%y").strftime("%m/%d/%y")
-        # except (ValueError, AttributeError):
-        #     formatted_date = "today"  # Assign default value if exception is thrown
-        
-        # # Handle dungeon_time formatting and conversion to EST
-        # try:
-        #     input_time = self.dungeon_time.value # Make this EST
-
-        #     # Parse the input time in 24-hour format
-        #     time_object = datetime.strptime(input_time, "%H:%M")
-        #     # datetime_combined = datetime.combine(current_date, time_object.time())
-
-        #     # Convert to Eastern Time (US/Eastern) without using pytz
-        #     est_time = time_object.astimezone(ZoneInfo("America/New_York"))
-
-        #     # Format the time in 12-hour AM/PM format in EST
-        #     formatted_time = est_time.strftime("%I:%M %p")
-        # except (ValueError, AttributeError):
-        #     formatted_time = "soon"  # Assign default value if exception is thrown
+        # Convert datetime object to Unix timestamp
+        timestamp = utils.format_dungeon_datetime(self.dungeon_date_time.value)
 
         self.embed.title = group_title
         self.embed.description = (
                 f"**Difficulty** {self.difficulty} "
                 f"{self.level if self.level != 'N/A' else ''}\n"
-                f"📅   <t: {self.formatted_date_time}:F>\n"
+                f"📅\n   {timestamp}\n"
                 f"{'**Notes:** ' + '```' + self.dungeon_note.value +'```' if self.dungeon_note.value else ''}\n"
             )
         
@@ -104,9 +85,19 @@ class LFMModal(ui.Modal):
         # Add one field for DPS with placeholders for up to three DPS members
         dps_value = "\n".join([dps_user.mention for dps_user in self.members["DPS"]] + ["None"] * (3 - len(self.members["DPS"])))
         self.embed.add_field(name="<:wow_dps:868737094011486229> DPS", value=dps_value, inline=False)
+        
+        mention_list = choices.mention_helper(interaction.guild.id, choices.extract_role_from_mention(self.role), self.difficulty)
+        print(f"Debug: mention_list for guild_id={interaction.guild.id}, role={self.role}, difficulty={self.difficulty} is {mention_list}")
+        mention_list_str = ' '.join(mention_list)
 
-        # Send the embed message as a follow-up to the deferred response
-        self.group_message = await interaction.followup.send(embed=self.embed)
+        self.group_message = await interaction.followup.send(
+            content=mention_list_str,  # Send the mention list as text content
+            embed=self.embed  # Send the embed message
+        )
+
+        # Wait for the calculated duration
+        wait_ts = utils.get_unix_timestamp(self.dungeon_date_time.value) + ( 60 * 60 )
+        wait = utils.calculate_time_difference(wait_ts)
 
         # Add reaction emojis for Tank, Healer, DPS, and Clear Role
         for emoji in choices.role_emojis.values():
@@ -121,45 +112,43 @@ class LFMModal(ui.Modal):
             type=discord.ChannelType.private_thread
         )
 
-        # Calculate deletion time (one hour from now)
-        # Use the current EST time for calculating deletion time (not the dungeon time)
-        # current_time_est = datetime.now().astimezone(ZoneInfo("America/New_York"))
-        # try:
-        #     deletion_time = current_time_est + timedelta(hours=1)
-        #     deletion_time_str = deletion_time.strftime("%I:%M %p")
-            
-        #     # Calculate the duration to wait (in seconds)
-        #     wait_duration = (deletion_time - current_time_est).total_seconds()
-        # except Exception as e:
-        #     deletion_time_str = 'soon'
-        #     wait_duration = 3600  # Fallback to 1 hour if calculation fails
-
-        mention_list = choices.mention_helper(interaction.guild.id, choices.extract_role_from_mention(self.role), self.difficulty)
-        print(f"Debug: mention_list for guild_id={interaction.guild.id}, role={self.role}, difficulty={self.difficulty} is {mention_list}")
-        # Send a message in the thread indicating when it will be deleted
-        
-        mention_list_str = '\n'.join(mention_list)
-
         await thread.send(
             f"Group for: {group_title}\n"
             f"Number of members: {len(self.members)}\n"
-            f"Listing will be deleted at time (one hour after start).\n"
-            f"{mention_list_str}"
+            f"Listing will be deleted at <t:{wait_ts}:F>\n"
         )
+        
+        await utils.countdown(wait)
 
-
-        # Wait for the calculated duration
-        # print(f"Starting sleep for {wait_duration} seconds.")
-        await asyncio.sleep(3600) #an hour
-        # print(f"Completed sleep of {wait_duration} seconds.")
-
-        # Delete the embed message and the thread after 60 seconds
-        try:
-            await self.group_message.delete()  # Delete the embed message
-            await thread.delete()  # Delete the thread
-        except discord.NotFound:
-            print("Message or thread not found, perhaps it was deleted earlier.")
-        except discord.Forbidden:
-            print("Bot doesn't have permissions to delete message or thread.")
-        except Exception as e:
-            print(f"An error occurred: {e}")
+        async def delete_message_and_thread(self):
+            print("Attempting to delete the message and thread.")
+            
+            # Add checks to verify that the objects are not None
+            if not self.group_message:
+                print("The group_message object is None.")
+            if not thread:
+                print("The thread object is None.")
+            
+            try:
+                if self.group_message:
+                    print(f"Deleting message: {self.group_message.id}")
+                    await self.group_message.delete()  # Delete the embed message
+                else:
+                    print("No message to delete.")
+                
+                if thread:
+                    print(f"Deleting thread: {thread.id}")
+                    await thread.delete()  # Delete the thread
+                else:
+                    print("No thread to delete.")
+                
+            except discord.NotFound:
+                print("Message or thread not found, perhaps it was deleted earlier.")
+            except discord.Forbidden:
+                print("Bot doesn't have permissions to delete message or thread.")
+            except discord.HTTPException as e:
+                print(f"HTTP error occurred: {e}")
+            except Exception as e:
+                print(f"An error occurred: {e}")
+        
+        await delete_message_and_thread(self)

@@ -12,6 +12,7 @@ role_emojis = {
 }
 
 dungeon_choices = [
+    app_commands.Choice(name="Any", value="any"),
     app_commands.Choice(name="Ara-Kara, City of Echoes", value="ara"),
     app_commands.Choice(name="City of Threads", value="cot"),
     app_commands.Choice(name="The Stonevault", value="vault"),
@@ -19,8 +20,7 @@ dungeon_choices = [
     app_commands.Choice(name="Mists of Tirna Scithe", value="mists"),
     app_commands.Choice(name="The Necrotic Wake", value="necrotic wake"),
     app_commands.Choice(name="Siege of Boralus", value="siege"),
-    app_commands.Choice(name="Any", value="any"),
-    app_commands.Choice(name="Grim Batol", value="grim"),
+    app_commands.Choice(name="Grim Batol", value="grim")
 ]
 
 difficulty_choices = [
