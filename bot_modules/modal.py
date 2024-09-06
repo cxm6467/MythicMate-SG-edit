@@ -24,7 +24,7 @@ class LFMModal(ui.Modal):
         # Set up text inputs with defaults provided
         self.dungeon_date_time = ui.TextInput(
             label="Date",
-            placeholder="Enter a Date and time (MM/DD/YY HH:MM) EST 24hr",
+            placeholder="Enter a Date and Time (MM/DD/YY HH:MM) EST 24hr [e.g., 09/05/24 20:00]",
             required=True
         )
 
@@ -61,10 +61,8 @@ class LFMModal(ui.Modal):
         # Check if the dungeon note contains the word "caboose" (case insensitive)
         if "caboose" in self.dungeon_note.value.lower():
             self.embed.color = discord.Color.blue()
-        elif "delacour" in self.dungeon_note.value.lower():
-            self.embed.color = discord.Color.og_blurple()
-        elif "nastaskia" in self.dungeon_note.value.lower():
-            self.embed.color = discord.Color.blurple()
+        elif "delacour" or "nastaskia" in self.dungeon_note.value.lower():
+            self.embed.color = discord.Color(0xFFFFFF)
         else:
             self.embed.color = discord.Color.red()
 
