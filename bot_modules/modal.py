@@ -133,8 +133,7 @@ class LFMModal(ui.Modal):
         )
 
         await thread.send(
-            f"Group for: {group_title}\n"
-            f"Number of members: {len(self.members)}\n"
+            f"Good luck on your dungeon run!\n"
             f"Listing will be deleted at <t:{wait_ts}:F>\n"
         )
         

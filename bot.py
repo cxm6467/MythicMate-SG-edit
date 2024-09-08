@@ -1,4 +1,5 @@
 import asyncio
+from tokenize import group
 from bot_modules import utils
 import discord
 from discord.ext import commands
@@ -43,12 +44,14 @@ async def on_reaction_add(reaction, user):
     # Print debug information about the reaction and user
     global group_message
     group_message = reaction.message
-    print(f"Debug: Reaction added - Emoji: {reaction.emoji}, User: {user.name} ({user.id})")
-    print(f"Debug: Group Message: {group_message.id} vs Reaction: {reaction.message.id}")
-
     if user == bot.user:
         print("Debug: Reaction is from the bot itself.")
         return
+    
+    print(f"Debug: Reaction added - Emoji: {reaction.emoji}, User: {user.name} ({user.id})")
+    print(f"Debug: Group Message: {group_message.id} vs Reaction: {reaction.message.id}")
+
+
 
     async with lock:
         # Handle the "Clear Role" reaction
@@ -175,9 +178,25 @@ async def update_embed(reaction):
             print("Debug: No embed found in the message.")
     if members["Tank"] is None and members["Healer"] is None and len(members["DPS"]) == 0:
         print(f"Debug: No roles assigned, deleting message and thread.")
-        await reaction.message.thread.delete()
-        if reaction.message is not None:
-            await reaction.message.delete()
+        # Attempt to delete the thread
+        if reaction.message and reaction.message.thread:
+            try:
+                await reaction.message.thread.delete()
+                print("Debug: Thread deleted successfully.")
+            except discord.NotFound:
+                print("Debug: Thread not found or already deleted.")
+            except Exception as e:
+                print(f"Debug: Exception occurred while deleting thread: {e}")
+
+        # Attempt to delete the message
+        if reaction.message:
+            try:
+                await reaction.message.delete()
+                print("Debug: Message deleted successfully.")
+            except discord.NotFound:
+                print("Debug: Message not found or already deleted.")
+            except Exception as e:
+                print(f"Debug: Exception occurred while deleting message: {e}")
 
 
 
@@ -232,7 +251,7 @@ async def lfm(interaction: discord.Interaction, difficulty: str, dungeon: str, l
         members = {"Tank": None, "Healer": None, "DPS": []}
 
     lfmModal = modal.LFMModal(interaction, difficulty, full_dungeon_name, level, role, members, embed=discord.Embed(description=""), group_message=interaction.message)
-    await interaction.response.send_modal(lfmModal)
+    group_message = await interaction.response.send_modal(lfmModal)
 
 
     # Function to check if all roles are filled and the group is complete
