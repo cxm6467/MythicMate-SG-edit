@@ -1,16 +1,25 @@
+from cProfile import label
 from discord import Webhook, ui
 import discord
-from datetime import date, datetime, timedelta
-from zoneinfo import ZoneInfo
-import asyncio
+from datetime import date, datetime
 from bot_modules import dungeons, utils
 import bot_modules.choices as choices
 
+from discord import ui, Embed, Interaction
+from datetime import datetime
+
+# Ensure `choices` module is correctly imported
+# import choices 
+
 # Define the modal for the slash command
 class LFMModal(ui.Modal):
-    def __init__(self, interaction: discord.Interaction, difficulty: str, dungeon: str = '', level: str = '', role: str = '', members:dict = [], embed:discord.Embed = discord.Embed(), group_message: Webhook = None, title="Looking for Members"):
+    def __init__(self, interaction: discord.Interaction, difficulty: str, dungeon: str = '', level: str = '', role: str = '', members: list = [], embed: discord.Embed = discord.Embed(), group_message: discord.Webhook = None, title="Looking for Members"):
         super().__init__(title=title)
+        
+        # Debugging print statement
         print(f"Initialized LFMModal with interaction user: {interaction.user}")
+        
+        # Instance variables
         self.user = interaction.user
         self.difficulty = difficulty
         self.dungeon = dungeon
@@ -28,17 +37,30 @@ class LFMModal(ui.Modal):
             required=True
         )
 
+        # Setup Select components with the provided options
+        self.dungeon_tz = ui.TextInput(
+            placeholder="Select a Timezone",
+            label="Timezone"
+        )
+        self.dungeon_meridiem = ui.TextInput(
+            placeholder="Select AM or PM",
+            label="Meridiem"
+        )
+
         self.dungeon_note = ui.TextInput(
             label="Notes",
             placeholder="Optional Notes",
             required=False
         )
-                
+
         # Add inputs to the modal
         self.add_item(self.dungeon_date_time)
+        self.add_item(self.dungeon_tz)
+        self.add_item(self.dungeon_meridiem)
         self.add_item(self.dungeon_note)
-
+                
         self.interaction = interaction
+
 
     async def on_submit(self, interaction: discord.Interaction):
         global thread
@@ -48,7 +70,7 @@ class LFMModal(ui.Modal):
         group_title = f"Group for {self.dungeon}{' +' + self.level if self.level != 'N/A' else ''}"
 
         # Convert datetime object to Unix timestamp
-        timestamp = utils.format_dungeon_datetime(self.dungeon_date_time.value)
+        timestamp = utils.format_dungeon_datetime(self.dungeon_date_time.value) if self.dungeon_date_time.value else datetime.now().strftime("%m/%d/%y %H:%M")
 
         self.embed.title = group_title
         self.embed.description = (
@@ -84,7 +106,7 @@ class LFMModal(ui.Modal):
         dps_value = "\n".join([dps_user.mention for dps_user in self.members["DPS"]] + ["None"] * (3 - len(self.members["DPS"])))
         self.embed.add_field(name="<:wow_dps:868737094011486229> DPS", value=dps_value, inline=False)
         
-        mention_list = choices.mention_helper(interaction.guild.id, choices.extract_role_from_mention(self.role), self.difficulty)
+        mention_list = utils.mention_helper(interaction.guild.id, utils.extract_role_from_mention(self.role), self.difficulty)
         print(f"Debug: mention_list for guild_id={interaction.guild.id}, role={self.role}, difficulty={self.difficulty} is {mention_list}")
         mention_list_str = ' '.join(mention_list)
 
