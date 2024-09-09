@@ -1,7 +1,7 @@
 import asyncio
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import discord
@@ -142,20 +142,48 @@ def get_unix_timestamp(dungeon_datetime_str, time_zone='America/New_York', merid
 
     return unix_timestamp
 
-def calculate_time_difference(starting_timestamp):
-    # Get the current Unix timestamp
-    current_timestamp = int(time.time())
-    print(f"Debug: Current Unix timestamp: {current_timestamp}")
-    
-    # Add one hour (3600 seconds) to the starting timestamp
-    one_hour_later_timestamp = starting_timestamp + 3600
-    print(f"Debug: Timestamp after adding one hour: {one_hour_later_timestamp}")
+def calculate_time_difference(starting_timestamp, tz_name='America/New_York'):
+    # Map short time zone codes to IANA time zone names
+    time_zone_mapping = {
+        'EST': 'America/New_York',    # Eastern Standard Time
+        'CST': 'America/Chicago',     # Central Standard Time
+        'MST': 'America/Denver',      # Mountain Standard Time
+        'PST': 'America/Los_Angeles',  # Pacific Standard Time
+        'AKST': 'America/Anchorage'  # Alaskan Standard Time
+    }
 
-    # Calculate the difference in seconds between the current timestamp and the future timestamp
-    difference_in_seconds = one_hour_later_timestamp - current_timestamp
+    # Convert short time zone code to IANA time zone name if necessary
+    tz_name = time_zone_mapping.get(tz_name.upper(), tz_name)
+
+    # Get the current time and convert it to a datetime object in EST
+    current_timestamp = int(time.time())
+    current_datetime_est = datetime.fromtimestamp(current_timestamp, tz=ZoneInfo('EST')).astimezone(ZoneInfo('America/New_York'))
+    print(f"Debug: Current datetime in EST: {current_datetime_est}")
+
+    try:
+        # Convert the starting Unix timestamp to a datetime object in the given time zone
+        starting_datetime = datetime.fromtimestamp(starting_timestamp, tz=ZoneInfo('EST'))
+        localized_datetime = starting_datetime.astimezone(ZoneInfo(tz_name))
+        print(f"Debug: Starting datetime in {tz_name}: {localized_datetime}")
+
+        # Convert the localized datetime to EST
+        starting_datetime_est = localized_datetime.astimezone(ZoneInfo('America/New_York'))
+        print(f"Debug: Starting datetime in EST: {starting_datetime_est}")
+
+    except Exception as e:
+        print(f"Debug: Error with time zone conversion or datetime parsing: {e}")
+        return None
+
+    # Add one hour to the starting datetime in EST
+    one_hour_later_datetime = starting_datetime_est + timedelta(hours=1)
+    print(f"Debug: Datetime one hour later in EST: {one_hour_later_datetime}")
+
+    # Calculate the difference in seconds between the current time in EST and the future timestamp
+    difference_in_seconds = int(one_hour_later_datetime.timestamp()) - int(current_datetime_est.timestamp())
     print(f"Debug: Difference in seconds: {difference_in_seconds}")
 
     return difference_in_seconds
+
 
 def mention_helper(server_id: str, role: str = None, difficulty: str = None):
     print(f"Comparing server_id: {server_id} with constants: "

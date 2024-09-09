@@ -1,6 +1,8 @@
 from discord import ui
 import discord
 from datetime import datetime
+
+from dotenv import set_key
 from bot_modules import dungeons, utils
 import bot_modules.choices as choices
 
@@ -130,7 +132,7 @@ class LFMModal(ui.Modal):
 
         # Wait for the calculated duration
         wait_ts = utils.get_unix_timestamp(self.dungeon_date_time.value, self.dungeon_tz.value, meridiem_value)
-        wait = utils.calculate_time_difference(wait_ts)
+        wait = utils.calculate_time_difference(wait_ts, self.dungeon_tz.value)
 
         # Add reaction emojis for Tank, Healer, DPS, and Clear Role
         for emoji in choices.role_emojis.values():
@@ -147,7 +149,7 @@ class LFMModal(ui.Modal):
 
         await thread.send(
             f"Good luck on your dungeon run!\n"
-            f"Listing will be deleted at <t:{wait_ts}:F>\n"
+            f"Listing will be deleted at <t:{wait_ts+3600}:F>\n"
         )
         
         await utils.countdown(wait)
