@@ -1,12 +1,12 @@
 import asyncio
 import re
 import time
+import discord
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-
-import discord
-
+from dateutil.parser import parse
 from bot_modules import constants
+
 
 async def countdown(duration):
     print(f"Debug: Starting countdown for {duration} seconds.")
@@ -22,98 +22,85 @@ async def countdown(duration):
 async def format_dungeon_datetime(dungeon_datetime_str, time_zone='America/New_York', user=None):
     print(f"Debug: Received input datetime string: '{dungeon_datetime_str}', time zone: {time_zone}")
 
-    # Convert short time zone code to IANA time zone name if necessary
     tz_name = constants.TIME_ZONE_MAPPING.get(time_zone.upper(), time_zone)
     if not tz_name:
         raise ValueError("Invalid time zone code. Use 'EST', 'CST', 'MST', or 'PST'.")
 
-    # Initialize formatted timestamp
     formatted_timestamp = "<t:0:F>"
+    errors = []
 
     try:
-        # Normalize the input string
-        normalized_datetime_str = dungeon_datetime_str.strip().upper()
+        # Normalize and parse the input string
+        normalized_datetime_str = dungeon_datetime_str.strip()
         print(f"Debug: Normalized input datetime string: '{normalized_datetime_str}'")
 
-        # Determine the datetime format based on the presence of AM/PM and year length
-        if 'AM' in normalized_datetime_str or 'PM' in normalized_datetime_str:
-            # 12-hour format with AM/PM
-            datetime_format = "%m/%d/%Y %I:%M %p" if len(normalized_datetime_str) > 14 else "%m/%d/%y %I:%M %p"
-        else:
-            # 24-hour format
-            datetime_format = "%m/%d/%Y %H:%M" if len(normalized_datetime_str) > 14 else "%m/%d/%y %H:%M"
+        try:
+            datetime_object = parse(normalized_datetime_str)
+            print(f"Debug: Parsed datetime object: {datetime_object}")
+        except (ValueError, TypeError) as e:
+            errors.append(f"Error parsing datetime: {e}")
+            return formatted_timestamp
 
-        # Parse the input datetime string into a datetime object
-        datetime_object = datetime.strptime(normalized_datetime_str, datetime_format)
-        print(f"Debug: Parsed datetime object: {datetime_object}")
+        try:
+            tz_info = ZoneInfo(tz_name)
+            localized_time = datetime_object.astimezone(tz_info)
+            print(f"Debug: Localized Time: {localized_time}")
 
-        # Convert to the specified time zone
-        tz_info = ZoneInfo(tz_name)
-        localized_time = datetime_object.replace(tzinfo=tz_info)
-        print(f"Debug: Localized Time: {localized_time}")
+            unix_timestamp = int(localized_time.timestamp())
+            print(f"Debug: Unix timestamp: {unix_timestamp}")
 
-        # Convert localized time to Unix timestamp
-        unix_timestamp = int(localized_time.timestamp())
-        print(f"Debug: Unix timestamp: {unix_timestamp}")
+            formatted_timestamp = f"<t:{unix_timestamp}:F>"
+            print(f"Debug: Formatted timestamp: {formatted_timestamp}")
 
-        # Format the timestamp for Discord
-        formatted_timestamp = f"<t:{unix_timestamp}:F>"
-        print(f"Debug: Formatted timestamp: {formatted_timestamp}")
+        except (ValueError, TypeError) as e:
+            errors.append(f"Error converting to timezone or timestamp: {e}")
 
-    except (ValueError, TypeError) as e:
-        # Handle errors and provide a default value
-        print(f"Debug: Error parsing datetime: {e}")
-        formatted_timestamp = "<t:0:F>"
+    except ValueError as e:
+        errors.append(f"Error with timezone conversion: {e}")
 
-        # Send a message to the user if provided
-        if user:
-            try:
-                await user.send(f"Error formatting datetime: {e}. Please check the format and try again.")
-            except discord.DiscordException as send_error:
-                print(f"Debug: Error sending message to user: {send_error}")
+    if errors and user:
+        try:
+            error_message = " | ".join(errors)
+            await user.send(f"Error formatting datetime: {error_message}. Please check the format and try again.")
+        except discord.DiscordException as send_error:
+            print(f"Debug: Error sending message to user: {send_error}")
 
     return formatted_timestamp
 
 def get_unix_timestamp(dungeon_datetime_str, time_zone='America/New_York'):
     print(f"Debug: Received input datetime string: '{dungeon_datetime_str}', time zone: {time_zone}")
-    # Convert short time zone code to IANA time zone name if necessary
+
     tz_name = constants.TIME_ZONE_MAPPING.get(time_zone.upper(), time_zone)
-    
     if not tz_name:
         raise ValueError("Invalid time zone code. Use 'EST', 'CST', 'MST', or 'PST' or provide a valid IANA time zone.")
 
-    # Initialize Unix timestamp
     unix_timestamp = 0
-    
+
     try:
-        # Normalize the input string
-        normalized_datetime_str = dungeon_datetime_str.strip().upper()
+        # Normalize and parse the input string
+        normalized_datetime_str = dungeon_datetime_str.strip()
         print(f"Debug: Normalized input datetime string: '{normalized_datetime_str}'")
 
-        # Determine the datetime format based on the presence of AM/PM and year length
-        if 'AM' in normalized_datetime_str or 'PM' in normalized_datetime_str:
-            # 12-hour format with AM/PM
-            datetime_format = "%m/%d/%Y %I:%M %p" if len(normalized_datetime_str) > 14 else "%m/%d/%y %I:%M %p"
-        else:
-            # 24-hour format
-            datetime_format = "%m/%d/%Y %H:%M" if len(normalized_datetime_str) > 14 else "%m/%d/%y %H:%M"
+        try:
+            datetime_object = parse(normalized_datetime_str)
+            print(f"Debug: Parsed datetime object: {datetime_object}")
+        except (ValueError, TypeError) as e:
+            print(f"Debug: Error parsing datetime: {e}")
+            return unix_timestamp
 
-        # Parse the input datetime string into a datetime object
-        datetime_object = datetime.strptime(normalized_datetime_str, datetime_format)
-        print(f"Debug: Parsed datetime object: {datetime_object}")
+        try:
+            tz_info = ZoneInfo(tz_name)
+            localized_time = datetime_object.astimezone(tz_info)
+            print(f"Debug: Localized Time: {localized_time}")
 
-        # Convert to the specified time zone
-        tz_info = ZoneInfo(tz_name)
-        localized_time = datetime_object.replace(tzinfo=tz_info)
-        print(f"Debug: Localized Time: {localized_time}")
+            unix_timestamp = int(localized_time.timestamp())
+            print(f"Debug: Unix timestamp: {unix_timestamp}")
 
-        # Convert localized time to Unix timestamp
-        unix_timestamp = int(localized_time.timestamp())
-        print(f"Debug: Unix timestamp: {unix_timestamp}")
+        except (ValueError, TypeError) as e:
+            print(f"Debug: Error converting to timezone or timestamp: {e}")
 
-    except (ValueError, TypeError) as e:
-        # Handle errors
-        print(f"Debug: Error parsing datetime: {e}")
+    except ValueError as e:
+        print(f"Debug: Error with timezone conversion: {e}")
 
     return unix_timestamp
 
