@@ -63,10 +63,6 @@ level_choices = [
     app_commands.Choice(name="20", value="20"),
     app_commands.Choice(name="N/A", value="N/A"),
 ]
-meridiem_choices = [
-    discord.SelectOption(label="12", value="12"),
-    discord.SelectOption(label="24", value="24", default=True)
-]
 
 tz_options = [
     discord.SelectOption(label="Eastern Standard Time (EST)", value="EST", default=True),

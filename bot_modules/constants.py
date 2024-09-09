@@ -20,3 +20,29 @@ DEV_MENTION_CHOICES = {
   "mythic_role":"<@&1281358645400965180>",
   "delve_role": "<@&1281358894014398558>"
 }
+
+TIME_ZONE_MAPPING = {
+    # Eastern Time Zone
+    'EST': 'America/New_York',       # Eastern Standard Time
+    'EDT': 'America/New_York',       # Eastern Daylight Time
+
+    # Central Time Zone
+    'CST': 'America/Chicago',        # Central Standard Time
+    'CDT': 'America/Chicago',        # Central Daylight Time
+
+    # Mountain Time Zone
+    'MST': 'America/Denver',         # Mountain Standard Time
+    'MDT': 'America/Denver',         # Mountain Daylight Time
+
+    # Pacific Time Zone
+    'PST': 'America/Los_Angeles',    # Pacific Standard Time
+    'PDT': 'America/Los_Angeles',    # Pacific Daylight Time
+
+    # Alaska Time Zone
+    'AKST': 'America/Anchorage',     # Alaska Standard Time
+    'AKDT': 'America/Anchorage',     # Alaska Daylight Time
+
+    # Hawaii-Aleutian Time Zone
+    'HAST': 'Pacific/Honolulu',      # Hawaii-Aleutian Standard Time
+    'HADT': 'Pacific/Honolulu',      # Hawaii-Aleutian Daylight Time
+}
