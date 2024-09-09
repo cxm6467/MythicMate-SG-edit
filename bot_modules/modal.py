@@ -1,11 +1,10 @@
-from cProfile import label
-from discord import Webhook, ui
+from discord import ui
 import discord
-from datetime import date, datetime
+from datetime import datetime
 from bot_modules import dungeons, utils
 import bot_modules.choices as choices
 
-from discord import ui, Embed, Interaction
+from discord import ui
 from datetime import datetime
 
 # Ensure `choices` module is correctly imported
@@ -33,7 +32,7 @@ class LFMModal(ui.Modal):
         # Set up text inputs with defaults provided
         self.dungeon_date_time = ui.TextInput(
             label="Date",
-            placeholder="Enter a Date and Time (MM/DD/YY HH:MM) EST 24hr [e.g., 09/05/24 20:00]",
+            placeholder="Enter a Date and Time (MM/DD/YY HH:MM)",
             required=True
         )
 
@@ -43,7 +42,7 @@ class LFMModal(ui.Modal):
             label="Timezone"
         )
         self.dungeon_meridiem = ui.TextInput(
-            placeholder="Select AM or PM",
+            placeholder="Select 12 or 24",
             label="Meridiem"
         )
 
@@ -69,8 +68,22 @@ class LFMModal(ui.Modal):
 
         group_title = f"Group for {self.dungeon}{' +' + self.level if self.level != 'N/A' else ''}"
 
-        # Convert datetime object to Unix timestamp
-        timestamp = utils.format_dungeon_datetime(self.dungeon_date_time.value) if self.dungeon_date_time.value else datetime.now().strftime("%m/%d/%y %H:%M")
+
+        meridiem_value = int(self.dungeon_meridiem.value)
+        # Debug information before calling format_dungeon_datetime
+        print(f"Debug: Dungeon Date Time Value: '{self.dungeon_date_time.value}'")
+        print(f"Debug: Time Zone Value: '{self.dungeon_tz.value}'")
+        print(f"Debug: Meridiem Value: '{meridiem_value}'")
+        print(f"Debug: User: '{self.interaction.user}'")
+        # Pass the converted value to the format_dungeon_datetime function
+        timestamp = await utils.format_dungeon_datetime(
+            str(self.dungeon_date_time.value),
+            self.dungeon_tz.value,
+            meridiem_value,
+            self.interaction.user
+        )
+
+        print(f"Debug: Timestamp for dungeon run: {timestamp}")
 
         self.embed.title = group_title
         self.embed.description = (
@@ -116,7 +129,7 @@ class LFMModal(ui.Modal):
         )
 
         # Wait for the calculated duration
-        wait_ts = utils.get_unix_timestamp(self.dungeon_date_time.value) + ( 60 * 60 )
+        wait_ts = utils.get_unix_timestamp(self.dungeon_date_time.value, self.dungeon_tz.value, meridiem_value)
         wait = utils.calculate_time_difference(wait_ts)
 
         # Add reaction emojis for Tank, Healer, DPS, and Clear Role

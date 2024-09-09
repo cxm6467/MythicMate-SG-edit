@@ -4,6 +4,8 @@ import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+import discord
+
 from bot_modules import constants
 
 async def countdown(duration):
@@ -17,60 +19,126 @@ async def countdown(duration):
     # print("0 seconds remaining  ")  # Print final message
     print("Debug: Completed countdown.")
 
-def format_dungeon_datetime(dungeon_datetime_str):
-    # Define the format of the input string
-    datetime_format = "%m/%d/%y %H:%M"
-    print(f"Debug: Received input datetime string: {dungeon_datetime_str}")
+from datetime import datetime
+from zoneinfo import ZoneInfo
+import discord
+
+async def format_dungeon_datetime(dungeon_datetime_str, time_zone='America/New_York', meridiem=24, user=None):
+    print(f"Debug: Received input datetime string: '{dungeon_datetime_str}', time zone: {time_zone}, meridiem: {meridiem}")
+
+    # Map short time zone codes to IANA time zone names
+    time_zone_mapping = {
+        'EST': 'America/New_York',    # Eastern Standard Time
+        'CST': 'America/Chicago',     # Central Standard Time
+        'MST': 'America/Denver',      # Mountain Standard Time
+        'PST': 'America/Los_Angeles',  # Pacific Standard Time
+        'AKST': 'America/Anchorage'  # Alaskan Standard Time
+    }
+    
+    # Convert short time zone code to IANA time zone name
+    tz_name = time_zone_mapping.get(time_zone.upper())
+    if not tz_name:
+        raise ValueError("Invalid time zone code. Use 'EST', 'CST', 'MST', or 'PST'.")
+
+    # Initialize formatted timestamp
+    formatted_timestamp = "<t:0:F>"
 
     try:
+        # Determine the datetime format based on the meridiem value
+        if meridiem == 12:
+            datetime_format = "%m/%d/%y %I:%M %p"  # 12-hour format with AM/PM
+        elif meridiem == 24:
+            datetime_format = "%m/%d/%y %H:%M"  # 24-hour format
+        else:
+            raise ValueError("Invalid value for meridiem. Use 12 for 12-hour format or 24 for 24-hour format.")
+        
+        # Normalize the input string: Strip extra spaces and normalize AM/PM case
+        normalized_datetime_str = dungeon_datetime_str.strip().upper()
+        print(f"Debug: Normalized input datetime string: '{normalized_datetime_str}'")
+
         # Parse the input datetime string into a datetime object
-        datetime_object = datetime.strptime(dungeon_datetime_str, datetime_format)
+        datetime_object = datetime.strptime(normalized_datetime_str, datetime_format)
         print(f"Debug: Parsed datetime object: {datetime_object}")
 
-        # Convert to Eastern Time (US/Eastern)
-        est_time = datetime_object.astimezone(ZoneInfo("America/New_York"))
-        print(f"Debug: Converted Eastern Time: {est_time}")
+        # Convert to the specified time zone
+        tz_info = ZoneInfo(tz_name)
+        localized_time = datetime_object.replace(tzinfo=tz_info)
+        print(f"Debug: Localized Time: {localized_time}")
 
-        # Convert Eastern Time to Unix timestamp
-        unix_timestamp = int(est_time.timestamp())
+        # Convert localized time to Unix timestamp
+        unix_timestamp = int(localized_time.timestamp())
         print(f"Debug: Unix timestamp: {unix_timestamp}")
 
         # Format the timestamp for Discord
-        # Use 'f' for long date/time format (e.g., September 5, 2024 12:00 PM)
         formatted_timestamp = f"<t:{unix_timestamp}:F>"
         print(f"Debug: Formatted timestamp: {formatted_timestamp}")
 
     except (ValueError, TypeError) as e:
         # Handle errors and provide a default value
         print(f"Debug: Error parsing datetime: {e}")
-        # Return a default formatted string if there's an error
+        # Optionally, you can include the error details in the default formatted timestamp
         formatted_timestamp = "<t:0:F>"
+
+        # Send a message to the user if provided
+        if user:
+            try:
+                await user.send(f"Error formatting datetime: {e}. Please check the format and try again.")
+            except discord.DiscordException as send_error:
+                print(f"Debug: Error sending message to user: {send_error}")
 
     return formatted_timestamp
 
-def get_unix_timestamp(dungeon_datetime_str):
-    # Define the format of the input string
-    datetime_format = "%m/%d/%y %H:%M"
-    print(f"Debug: Received input datetime string: {dungeon_datetime_str}")
 
+def get_unix_timestamp(dungeon_datetime_str, time_zone='America/New_York', meridiem=24):
+    print(f"Debug: Received input datetime string: '{dungeon_datetime_str}', time zone: {time_zone}, meridiem: {meridiem}")
+
+    # Map short time zone codes to IANA time zone names
+    time_zone_mapping = {
+        'EST': 'America/New_York',    # Eastern Standard Time
+        'CST': 'America/Chicago',     # Central Standard Time
+        'MST': 'America/Denver',      # Mountain Standard Time
+        'PST': 'America/Los_Angeles',  # Pacific Standard Time
+        'AKST': 'America/Anchorage'  # Alaskan Standard Time
+    }
+    
+    # Convert short time zone code to IANA time zone name if necessary
+    tz_name = time_zone_mapping.get(time_zone.upper(), time_zone)
+    
+    if not tz_name:
+        raise ValueError("Invalid time zone code. Use 'EST', 'CST', 'MST', or 'PST' or provide a valid IANA time zone.")
+
+    # Determine the datetime format based on the meridiem value
+    if meridiem == 12:
+        datetime_format = "%m/%d/%y %I:%M %p"  # 12-hour format with AM/PM
+    elif meridiem == 24:
+        datetime_format = "%m/%d/%y %H:%M"  # 24-hour format
+    else:
+        raise ValueError("Invalid value for meridiem. Use 12 for 12-hour format or 24 for 24-hour format.")
+    
+    # Initialize Unix timestamp
+    unix_timestamp = 0
+    
     try:
+        # Normalize the input string: Strip extra spaces and normalize AM/PM case
+        normalized_datetime_str = dungeon_datetime_str.strip().upper()
+        print(f"Debug: Normalized input datetime string: '{normalized_datetime_str}'")
+
         # Parse the input datetime string into a datetime object
-        datetime_object = datetime.strptime(dungeon_datetime_str, datetime_format)
+        datetime_object = datetime.strptime(normalized_datetime_str, datetime_format)
         print(f"Debug: Parsed datetime object: {datetime_object}")
 
-        # Convert to Eastern Time (US/Eastern)
-        est_time = datetime_object.astimezone(ZoneInfo("America/New_York"))
-        print(f"Debug: Converted Eastern Time: {est_time}")
+        # Convert to the specified time zone
+        tz_info = ZoneInfo(tz_name)
+        localized_time = datetime_object.replace(tzinfo=tz_info)
+        print(f"Debug: Localized Time: {localized_time}")
 
-        # Convert Eastern Time to Unix timestamp
-        unix_timestamp = int(est_time.timestamp())
+        # Convert localized time to Unix timestamp
+        unix_timestamp = int(localized_time.timestamp())
         print(f"Debug: Unix timestamp: {unix_timestamp}")
 
     except (ValueError, TypeError) as e:
         # Handle errors and provide a default value
         print(f"Debug: Error parsing datetime: {e}")
-        # Return a default Unix timestamp for error cases (could be the Unix epoch start)
-        unix_timestamp = 0
 
     return unix_timestamp
 
@@ -83,7 +151,7 @@ def calculate_time_difference(starting_timestamp):
     one_hour_later_timestamp = starting_timestamp + 3600
     print(f"Debug: Timestamp after adding one hour: {one_hour_later_timestamp}")
 
-    # Calculate the difference in seconds between now and the future timestamp
+    # Calculate the difference in seconds between the current timestamp and the future timestamp
     difference_in_seconds = one_hour_later_timestamp - current_timestamp
     print(f"Debug: Difference in seconds: {difference_in_seconds}")
 
