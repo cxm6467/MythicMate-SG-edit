@@ -1,12 +1,7 @@
-# MythicMate
+# LFM
 
-![MythicMate Logo](https://i.ibb.co/VN6xF2j/DALL-E-2024-08-09-11-59-17-A-clean-and-modern-icon-representing-a-World-of-Warcraft-Mythic-dungeon-c.png) <!-- Replace with the actual path to your logo if you have one -->
+**LFM** is a fork of **MythicMate** which is a powerful and intuitive Discord bot designed for World of Warcraft players who love tackling Mythic+ dungeons. This bot helps you quickly form balanced groups, manage roles, and streamline your dungeon runs. Whether you're a tank, healer, or DPS, MythicMate ensures everyone is in the right place for successful runs.
 
-**MythicMate** is a powerful and intuitive Discord bot designed for World of Warcraft players who love tackling Mythic+ dungeons. This bot helps you quickly form balanced groups, manage roles, and streamline your dungeon runs. Whether you're a tank, healer, or DPS, MythicMate ensures everyone is in the right place for successful runs.
-
-## Invite MythicMate to Your Server
-
-Click [here](https://discord.com/oauth2/authorize?client_id=1271394615119056918&permissions=268789824&integration_type=0&scope=bot) to invite MythicMate to your Discord server.
 
 ## Features
 
@@ -15,16 +10,16 @@ Click [here](https://discord.com/oauth2/authorize?client_id=1271394615119056918&
 - **Dungeon Name Translation:** Supports shorthand dungeon names (e.g., `mots` for Mists of Tirna Scithe).
 - **Interactive Embeds:** Displays group information in an easy-to-read embed with real-time updates.
 - **Completion Tracking:** Marks the group as complete when all roles are filled and the dungeon is done.
-
-![Example Embed](https://i.ibb.co/sWW092m/Screenshot-2024-08-09-222355.png)
+- **Dungeon Scheduling:** Enables you to give a time and timezone to set up a date in the future.
+- **Private Threads:** Allow for your own group's chat space that deletes an hour after dungeon time start (the scheduled time, not when you actually enter the dungeon).
 
 ## Commands
 
 ### `/lfm`
 Start looking for members for a Mythic+ run.
 
-- **Usage:** `/lfm dungeon:<dungeon> key_level:<key level> role:<role>`
-- **Example:** `/lfm dungeon:mots key_level:+10 role:tank`
+- **Usage:** `/lfm difficulty<difficulty> dungeon:<dungeon> level:<level> role:<role>`
+- **Example:** `/lfm difficulty:heroic dungeon:mots level:+10  role:tank`
 
 This command creates an interactive embed where others can join by reacting to select their role (Tank, Healer, DPS). Once all roles are filled, the bot marks the group as ready.
 
@@ -41,8 +36,8 @@ This command creates an interactive embed where others can join by reacting to s
 1. **Clone the Repository:**
 
    ```bash
-   git clone https://github.com/Beel12213/MythicMate.git
-   cd MythicMate
+   git clone git@github.com:cxm6467/MythicMate-SG-edit.git
+   cd MythicMate-SG-edit
 2. **Set Up Environment Variables:**
  - Create a .env file in the root of the project:
    ```bash
@@ -89,6 +84,7 @@ We welcome contributions! Please follow these steps:
 
 ### License
 This project is licensed under the MIT License. See the LICENSE file for details.
+Forked from: [Beel12213/MythicMate](https://github.com/Beel12213/MythicMate)
 
 ### Contact
-If you have any questions or suggestions, feel free using Discord: thisisbeel
+If you have any questions or suggestions, feel free using Discord: sgcaboose
