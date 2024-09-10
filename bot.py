@@ -253,25 +253,25 @@ async def lfm(interaction: discord.Interaction, difficulty: str, dungeon: str, l
 
 
     # Function to check if all roles are filled and the group is complete
-    def check_completion(reaction, user):
-        return (
-            str(reaction.emoji) == "✅"
-            and user in [members["Tank"], members["Healer"], *members["DPS"]]
-        )
+    # def check_completion(reaction, user):
+    #     return (
+    #         str(reaction.emoji) == "✅"
+    #         and user in [members["Tank"], members["Healer"], *members["DPS"]]
+    #     )
 
-    while True:
-        reaction, user = await bot.wait_for('reaction_add', check=check_completion)
+    # while True:
+    #     reaction, user = await bot.wait_for('reaction_add', check=check_completion)
 
-        if reaction.emoji == "✅" and user in [members["Tank"], members["Healer"], *members["DPS"]]:
-            async with lock:
-                await reaction.message.delete()  # Delete the group message when the group is complete
-            await interaction.followup.send(
-                f"The group for {full_dungeon_name} has completed the dungeon. The message has been removed.",
-                ephemeral=True
-            )
-            break
-        else:
-            async with lock:
-                await reaction.message.remove_reaction("✅", user)
+    #     if reaction.emoji == "✅" and user in [members["Tank"], members["Healer"], *members["DPS"]]:
+    #         async with lock:
+    #             await reaction.message.delete()  # Delete the group message when the group is complete
+    #         await interaction.followup.send(
+    #             f"The group for {full_dungeon_name} has completed the dungeon. The message has been removed.",
+    #             ephemeral=True
+    #         )
+    #         break
+    #     else:
+    #         async with lock:
+    #             await reaction.message.remove_reaction("✅", user)
 # Run the bot with the token loaded from the environment variables
 bot.run(TOKEN)
