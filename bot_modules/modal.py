@@ -163,11 +163,7 @@ class LFMModal(ui.Modal):
                 print("The thread object is None.")
             
             try:
-                if self.group_message:
-                    print(f"Deleting message: {self.group_message.id}")
-                    await self.group_message.delete()  # Delete the embed message
-                else:
-                    print("No message to delete.")
+
                 
                 if thread:
                     print(f"Deleting thread: {thread.id}")
@@ -175,6 +171,11 @@ class LFMModal(ui.Modal):
                 else:
                     print("No thread to delete.")
                 
+                if self.group_message:
+                    print(f"Deleting message: {self.group_message.id}")
+                    await self.group_message.delete()  # Delete the embed message
+                else:
+                    print("No message to delete.")
             except discord.NotFound:
                 print("Message or thread not found, perhaps it was deleted earlier.")
             except discord.Forbidden:

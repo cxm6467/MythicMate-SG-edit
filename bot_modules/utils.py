@@ -4,7 +4,7 @@ import time
 import discord
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-from dateutil.parser import parse
+from dateutil import parser
 from bot_modules import constants
 
 
@@ -35,7 +35,7 @@ async def format_dungeon_datetime(dungeon_datetime_str, time_zone='America/New_Y
         print(f"Debug: Normalized input datetime string: '{normalized_datetime_str}'")
 
         try:
-            datetime_object = parse(normalized_datetime_str)
+            datetime_object = parser.parse(normalized_datetime_str)
             print(f"Debug: Parsed datetime object: {datetime_object}")
         except (ValueError, TypeError) as e:
             errors.append(f"Error parsing datetime: {e}")
@@ -82,7 +82,7 @@ def get_unix_timestamp(dungeon_datetime_str, time_zone='America/New_York'):
         print(f"Debug: Normalized input datetime string: '{normalized_datetime_str}'")
 
         try:
-            datetime_object = parse(normalized_datetime_str)
+            datetime_object = parser.parse(normalized_datetime_str)
             print(f"Debug: Parsed datetime object: {datetime_object}")
         except (ValueError, TypeError) as e:
             print(f"Debug: Error parsing datetime: {e}")
