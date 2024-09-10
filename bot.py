@@ -53,35 +53,35 @@ async def on_reaction_add(reaction, user):
 
     async with lock:
         # Handle the "Clear Role" reaction
-        if str(reaction.emoji) == choices.role_emojis.get("Clear Role"):
-            print(f"Debug: Clear Role reaction detected by {user.name} ({user.id})")
-            await reaction.message.thread.send(f"{user.display_name} has left the group.")
+        # if str(reaction.emoji) == choices.role_emojis.get("Clear Role"):
+        #     print(f"Debug: Clear Role reaction detected by {user.name} ({user.id})")
+        #     await reaction.message.thread.send(f"{user.display_name} has left the group.")
 
-            # Clear the user's role
-            if user == members.get("Tank"):
-                members["Tank"] = None
-                print(f"Debug: Tank role cleared for {user.name} ({user.id})")
-            elif user == members.get("Healer"):
-                members["Healer"] = None
-                print(f"Debug: Healer role cleared for {user.name} ({user.id})")
-            elif user in members.get("DPS", []):
-                members["DPS"].remove(user)
-                print(f"Debug: DPS role cleared for {user.name} ({user.id})")
+        #     # Clear the user's role
+        #     if user == members.get("Tank"):
+        #         members["Tank"] = None
+        #         print(f"Debug: Tank role cleared for {user.name} ({user.id})")
+        #     elif user == members.get("Healer"):
+        #         members["Healer"] = None
+        #         print(f"Debug: Healer role cleared for {user.name} ({user.id})")
+        #     elif user in members.get("DPS", []):
+        #         members["DPS"].remove(user)
+        #         print(f"Debug: DPS role cleared for {user.name} ({user.id})")
 
-            # Remove the user's other role-related reactions
-            for role, emoji in choices.role_emojis.items():
-                if emoji != choices.role_emojis.get("Clear Role"):
-                    if reaction.message is not None:
-                        await reaction.message.remove_reaction(emoji, user)
-                        print(f"Debug: Removed reaction {emoji} from message by {user.name} ({user.id})")
+        #     # Remove the user's other role-related reactions
+        #     for role, emoji in choices.role_emojis.items():
+        #         if emoji != choices.role_emojis.get("Clear Role"):
+        #             if reaction.message is not None:
+        #                 await reaction.message.remove_reaction(emoji, user)
+        #                 print(f"Debug: Removed reaction {emoji} from message by {user.name} ({user.id})")
 
-            # Update the embed
-            print(f"Debug: Calling update_embed in clear_role check From on_reaction_add With: {reaction}")
-            await update_embed(reaction)
-            if reaction.message is not None:
-                await reaction.message.remove_reaction(reaction.emoji, user)
-                print("Debug: Embed updated and Clear Role reaction removed.")
-            return
+        #     # Update the embed
+        #     print(f"Debug: Calling update_embed in clear_role check From on_reaction_add With: {reaction}")
+        #     await update_embed(reaction)
+        #     if reaction.message is not None:
+        #         await reaction.message.remove_reaction(reaction.emoji, user)
+        #         print("Debug: Embed updated and Clear Role reaction removed.")
+        #     return
 
         # Prevent users from selecting multiple roles
         if user in [members["Tank"], members["Healer"], *members["DPS"]]:
