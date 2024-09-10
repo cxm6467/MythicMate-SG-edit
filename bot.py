@@ -118,9 +118,9 @@ async def on_reaction_add(reaction, user):
             print("Debug: Embed updated with new role assignments.")
 
         # If all roles are filled, add a "✅" reaction
-        if members["Tank"] and members["Healer"] and len(members["DPS"]) == 3:
-            await reaction.message.add_reaction("✅")
-            print("Debug: All roles filled, added ✅ reaction to indicate group is ready.")
+        # if members["Tank"] and members["Healer"] and len(members["DPS"]) == 3:
+        #     await reaction.message.add_reaction("✅")
+        #     print("Debug: All roles filled, added ✅ reaction to indicate group is ready.")
         
             # Check if there are no Tanks, no Healers, and no DPS member
 
